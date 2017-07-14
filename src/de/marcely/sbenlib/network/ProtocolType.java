@@ -1,5 +1,7 @@
 package de.marcely.sbenlib.network;
 
+import de.marcely.sbenlib.server.SBENServer;
+
 public enum ProtocolType {
 	
 	UDP,
@@ -16,12 +18,12 @@ public enum ProtocolType {
 		}
 	}
 	
-	public de.marcely.sbenlib.server.protocol.Protocol getServerInstance(ConnectionInfo conn, de.marcely.sbenlib.server.ServerEventListener listener, int maxClients){
+	public de.marcely.sbenlib.server.protocol.Protocol getServerInstance(ConnectionInfo conn, SBENServer server, de.marcely.sbenlib.server.ServerEventListener listener, int maxClients){
 		switch(this){
 		case UDP:
-			return new de.marcely.sbenlib.server.protocol.UDPProtocol(conn, listener, maxClients);
+			return new de.marcely.sbenlib.server.protocol.UDPProtocol(conn, server, listener, maxClients);
 		case TCP:
-			return new de.marcely.sbenlib.server.protocol.TCPProtocol(conn, listener, maxClients);
+			return new de.marcely.sbenlib.server.protocol.TCPProtocol(conn, server, listener, maxClients);
 		default:
 			return null;
 		}

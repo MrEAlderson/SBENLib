@@ -6,7 +6,7 @@ import lombok.Getter;
 public class SBENServer {
 	
 	@Getter private final ConnectionInfo connectionInfo;
-	private final SocketHandler socketHandler;
+	@Getter private final SocketHandler socketHandler;
 	
 	public SBENServer(ConnectionInfo connInfo, int maxClients){
 		this.connectionInfo = connInfo;
@@ -23,5 +23,9 @@ public class SBENServer {
 	
 	public ServerStartInfo run(){
 		return socketHandler.run();
+	}
+	
+	public boolean close(){
+		return socketHandler.close();
 	}
 }

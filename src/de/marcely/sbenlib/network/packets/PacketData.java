@@ -9,6 +9,7 @@ public class PacketData extends Packet {
 	public static final byte PRIORITY_VERY_HIGH = (byte) 0x2; // care if delivered and if it's in the correct order
 	
 	public int id = Util.RAND.nextInt(255);
+	public int priority = PRIORITY_LOW;
 	
 	@Override
 	public byte getType(){

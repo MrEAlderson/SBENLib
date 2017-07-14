@@ -4,6 +4,8 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Random;
 
+import de.marcely.sbenlib.network.Network;
+
 public class Util {
 	
 	public static final Random RAND = new Random();
@@ -23,5 +25,14 @@ public class Util {
 		}catch(InterruptedException e){
 			e.printStackTrace();
 		}
+	}
+	
+	public static byte[] generateRandomSecurityID(){
+		final byte[] bytes = new byte[Network.SECURITYID_LENGTH];
+		
+		for(int i=0; i<bytes.length; i++)
+			bytes[i] = (byte) RAND.nextInt(255);
+		
+		return bytes;
 	}
 }

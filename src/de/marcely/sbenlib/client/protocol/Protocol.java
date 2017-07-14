@@ -1,6 +1,7 @@
 package de.marcely.sbenlib.client.protocol;
 
 import de.marcely.sbenlib.client.ServerEventListener;
+import de.marcely.sbenlib.compression.Base64;
 import de.marcely.sbenlib.network.ConnectionInfo;
 import de.marcely.sbenlib.network.ProtocolType;
 import de.marcely.sbenlib.network.packets.Packet;
@@ -22,10 +23,15 @@ public abstract class Protocol {
 	}
 	
 	public boolean sendPacket(byte[] packet){
-		_sendPacket(packet);
+		_sendPacket(Base64.encode(packet));
 		Util.sleep(10);
 		return _sendPacket(Packet.SEPERATOR);
 	}
+	
+	public boolean sendPacket(Packet packet){
+		return sendPacket(packet.getWriteStream().toByteArray());
+	}
+	
 	
 	public abstract ProtocolType getType();
 	

@@ -1,8 +1,10 @@
 package de.marcely.sbenlib.network.packets;
 
+import de.marcely.sbenlib.network.Network;
+
 public class PacketLogin extends Packet {
 
-	public byte[] security_id; // length: 8 bytes
+	public byte[] security_id;
 	public int version_protocol;
 	
 	@Override
@@ -20,7 +22,7 @@ public class PacketLogin extends Packet {
 
 	@Override
 	protected void _decode(byte[] data){
-		this.security_id = this.readStream.read(8);
+		this.security_id = this.readStream.read(Network.SECURITYID_LENGTH);
 		this.version_protocol = this.readStream.readUnsignedShort();
 	}
 }

@@ -46,8 +46,7 @@ public class UDPProtocol extends Protocol {
 						}
 					}
 				};
-				
-				sendPacket(new String("111111111111111111111111111111111115511241421451421").getBytes());
+				this.thread.start();
 				
 			}catch(SocketException e){
 				e.printStackTrace();

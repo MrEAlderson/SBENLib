@@ -1,14 +1,19 @@
 package de.marcely.sbenlib.server.protocol;
 
+import de.marcely.sbenlib.compression.Base64;
 import de.marcely.sbenlib.network.ConnectionInfo;
 import de.marcely.sbenlib.network.ProtocolType;
+import de.marcely.sbenlib.network.packets.Packet;
+import de.marcely.sbenlib.server.SBENServer;
 import de.marcely.sbenlib.server.ServerEventListener;
 import de.marcely.sbenlib.server.ServerStartInfo;
 import de.marcely.sbenlib.server.Session;
+import de.marcely.sbenlib.util.Util;
 import lombok.Getter;
 
 public abstract class Protocol {
 	
+	@Getter protected final SBENServer server;
 	@Getter protected final ConnectionInfo connectionInfo;
 	@Getter protected final ServerEventListener listener;
 	@Getter protected final int maxClients;
@@ -17,7 +22,8 @@ public abstract class Protocol {
 	
 	@Getter protected boolean running = false;
 	
-	public Protocol(ConnectionInfo conn, ServerEventListener listener, int maxClients){
+	public Protocol(ConnectionInfo conn, SBENServer server, ServerEventListener listener, int maxClients){
+		this.server = server;
 		this.connectionInfo = conn;
 		this.listener = listener;
 		this.maxClients = maxClients;
@@ -30,6 +36,16 @@ public abstract class Protocol {
 		return info;
 	}
 	
+	public boolean sendPacket(Session session, Packet packet){
+		return sendPacket(session, packet.getWriteStream().toByteArray());
+	}
+	
+	public boolean sendPacket(Session session, byte[] packet){
+		_sendPacket(session, Base64.encode(packet));
+		Util.sleep(10);
+		return _sendPacket(session, Packet.SEPERATOR);
+	}
+	
 	
 	public abstract ProtocolType getType();
 	
@@ -37,5 +53,5 @@ public abstract class Protocol {
 	
 	public abstract boolean close();
 	
-	public abstract boolean sendPacket(Session session, byte[] packet);
+	protected abstract boolean _sendPacket(Session session, byte[] packet);
 }

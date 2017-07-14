@@ -9,6 +9,7 @@ import java.net.Socket;
 import de.marcely.sbenlib.network.ConnectionInfo;
 import de.marcely.sbenlib.network.ProtocolType;
 import de.marcely.sbenlib.network.packets.Packet;
+import de.marcely.sbenlib.server.SBENServer;
 import de.marcely.sbenlib.server.ServerEventListener;
 import de.marcely.sbenlib.server.ServerStartInfo;
 import de.marcely.sbenlib.server.Session;
@@ -17,8 +18,8 @@ public class TCPProtocol extends Protocol {
 	
 	private ServerSocket socket;
 	
-	public TCPProtocol(ConnectionInfo conn, ServerEventListener listener, int maxClients){
-		super(conn, listener, maxClients);
+	public TCPProtocol(ConnectionInfo conn, SBENServer server, ServerEventListener listener, int maxClients){
+		super(conn, server, listener, maxClients);
 	}
 	
 	@Override
@@ -60,12 +61,19 @@ public class TCPProtocol extends Protocol {
 									}
 								};
 								
-								final Session session = new Session(client.getInetAddress(), client.getPort(), thread, client.getOutputStream());
+								final Session session = new Session(server, client.getInetAddress(), client.getPort(), thread, client.getOutputStream());
 								
 								listener.onClientRequest(session);
 								thread.start();
 								
 							}catch(IOException e){
+								final String reason = e.getMessage();
+								
+								if(reason != null){
+									if(reason.equals("socket closed"))
+										return;
+								}
+								
 								e.printStackTrace();
 							}
 						}
@@ -101,7 +109,7 @@ public class TCPProtocol extends Protocol {
 	}
 
 	@Override
-	public boolean sendPacket(Session session, byte[] packet){
+	protected boolean _sendPacket(Session session, byte[] packet){
 		if(running){
 			try{
 				((OutputStream) session.getObj()).write(packet);

@@ -1,13 +1,20 @@
 package de.marcely.sbenlib.compression;
 
-import de.marcely.sbenlib.util.MathUtil;
+import java.nio.charset.StandardCharsets;
+
+import javax.xml.bind.DatatypeConverter;
 
 public class Base64 {
+	
 	public static byte[] encode(byte[] data){
-		return encode(data, Integer.toBinaryString(data[0] & 0xFF).length());
+		return DatatypeConverter.printBase64Binary(data).getBytes(StandardCharsets.UTF_8);
 	}
 	
-	public static byte[] encode(byte[] data, int bitSize){
+	public static byte[] decode(byte[] data){
+		return DatatypeConverter.parseBase64Binary(new String(data, StandardCharsets.UTF_8));
+	}
+	
+	/*public static byte[] encode(byte[] data, int bitSize){
 		// convert array to bits
 		final boolean[] bits = new boolean[data.length*bitSize];
 		
@@ -37,15 +44,26 @@ public class Base64 {
 				
 				newBits[slot] = false;
 			}
+			
+			index++;
 		}
+		
+		final byte[] buffer = new byte[newBits.length/6];
+		for(int i=0; i<newBits.length/6; i++){
+			final int slot = i*6;
+			String binrary = "";
+			
+			for(int bit=0; bit<6; bit++)
+				binrary += newBits[slot+bit] == true ? "1" : "0";
+			
+			buffer[i] = (byte) Integer.parseInt(binrary, 2);
+		}
+		
+		System.out.println(new String(buffer));
 		
 		// convert bits to bytes
 		
 		
 		return data;
-	}
-	
-	public static byte[] decode(byte[] data, int bitSize){
-		return data;
-	}
+	}*/
 }

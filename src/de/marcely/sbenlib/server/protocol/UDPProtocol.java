@@ -9,7 +9,7 @@ import java.util.Arrays;
 
 import de.marcely.sbenlib.network.ConnectionInfo;
 import de.marcely.sbenlib.network.ProtocolType;
-import de.marcely.sbenlib.network.packets.Packet;
+import de.marcely.sbenlib.server.SBENServer;
 import de.marcely.sbenlib.server.ServerEventListener;
 import de.marcely.sbenlib.server.ServerStartInfo;
 import de.marcely.sbenlib.server.Session;
@@ -18,8 +18,8 @@ public class UDPProtocol extends Protocol {
 	
 	private DatagramSocket socket;
 	
-	public UDPProtocol(ConnectionInfo conn, ServerEventListener listener, int maxClients){
-		super(conn, listener, maxClients);
+	public UDPProtocol(ConnectionInfo conn, SBENServer server, ServerEventListener listener, int maxClients){
+		super(conn, server, listener, maxClients);
 	}
 	
 	@Override
@@ -45,13 +45,20 @@ public class UDPProtocol extends Protocol {
 								Session session = listener.getSession(packet.getAddress(), packet.getPort());
 								
 								if(session == null){
-									session = new Session(packet.getAddress(), packet.getPort());
+									session = new Session(server, packet.getAddress(), packet.getPort());
 									listener.onClientRequest(session);
 								}
 								
 								listener.onPacketReceive(session, Arrays.copyOfRange(packet.getData(), packet.getOffset(), packet.getLength()));
 								
 							}catch(IOException e){
+								final String reason = e.getMessage();
+								
+								if(reason != null){
+									if(reason.equals("socket closed"))
+										return;
+								}
+								
 								e.printStackTrace();
 							}
 						}
@@ -82,11 +89,10 @@ public class UDPProtocol extends Protocol {
 	}
 
 	@Override
-	public boolean sendPacket(Session session, byte[] packet){
+	protected boolean _sendPacket(Session session, byte[] packet){
 		if(running){
 			try{
 				socket.send(new DatagramPacket(packet, packet.length, session.getAddress(), session.getPort()));
-				sendPacket(session, Packet.SEPERATOR);
 			}catch(IOException e){
 				e.printStackTrace();
 				return false;
