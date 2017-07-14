@@ -7,12 +7,15 @@ If you are using UDP as a protocol you are able different priorities for your da
 
 # Code examples
 Server:
+```java
 final SBENServer server = new SBENServer(new ConnectionInfo("localhost", 6234, ProtocolType.UDP, CompressionType.ZLib), 1 /* Max clients */);
 final boolean success = server.run() == ServerStartInfo.SUCCESS;
-
+```
 Client:
+```java
 final SBENServerConnection client = new SBENServerConnection(new ConnectionInfo("localhost", 6234, ProtocolType.UDP, CompressionType.ZLib));
 final boolean success = server.run();
+```
 
 # State
 This library is currently in a very early stage.<br />
