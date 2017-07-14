@@ -29,3 +29,4 @@ Currently you are not even able to create your own packets.
 (c) 2017 Marcely.de
 
 # License
+BSD-3-Clause
