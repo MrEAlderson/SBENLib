@@ -1,6 +1,7 @@
 package de.marcely.sbenlib.client.protocol;
 
 import de.marcely.sbenlib.client.ServerEventListener;
+import de.marcely.sbenlib.client.SocketHandler;
 import de.marcely.sbenlib.compression.Base64;
 import de.marcely.sbenlib.network.ConnectionInfo;
 import de.marcely.sbenlib.network.ProtocolType;
@@ -11,14 +12,16 @@ import lombok.Getter;
 public abstract class Protocol {
 	
 	@Getter protected final ConnectionInfo connectionInfo;
+	@Getter protected final SocketHandler socketHandler;
 	@Getter protected final ServerEventListener listener;
 	
 	@Getter protected Thread thread = null;
 	
 	@Getter protected boolean running = false;
 	
-	public Protocol(ConnectionInfo connInfo, ServerEventListener listener){
+	public Protocol(ConnectionInfo connInfo, SocketHandler socketHandler, ServerEventListener listener){
 		this.connectionInfo = connInfo;
+		this.socketHandler = socketHandler;
 		this.listener = listener;
 	}
 	

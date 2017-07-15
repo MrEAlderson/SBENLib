@@ -7,6 +7,7 @@ import java.net.SocketException;
 import java.util.Arrays;
 
 import de.marcely.sbenlib.client.ServerEventListener;
+import de.marcely.sbenlib.client.SocketHandler;
 import de.marcely.sbenlib.network.ConnectionInfo;
 import de.marcely.sbenlib.network.ProtocolType;
 
@@ -14,8 +15,8 @@ public class UDPProtocol extends Protocol {
 	
 	private DatagramSocket socket;
 	
-	public UDPProtocol(ConnectionInfo connInfo, ServerEventListener listener){
-		super(connInfo, listener);
+	public UDPProtocol(ConnectionInfo connInfo, SocketHandler socketHandler, ServerEventListener listener){
+		super(connInfo, socketHandler, listener);
 	}
 
 	@Override
@@ -41,6 +42,15 @@ public class UDPProtocol extends Protocol {
 								
 								listener.onPacketReceive(Arrays.copyOfRange(packet.getData(), packet.getOffset(), packet.getLength()));
 							}catch(IOException e){
+								final String reason = e.getMessage();
+								
+								if(reason != null){
+									if(reason.equals("socket closed")){
+										socketHandler.close();
+										return;
+									}
+								}
+								
 								e.printStackTrace();
 							}
 						}
@@ -61,10 +71,10 @@ public class UDPProtocol extends Protocol {
 	@Override
 	public boolean close(){
 		if(running){
+			this.running = false;
 			
 			socket.close();
 			
-			this.running = false;
 			return true;
 		}else
 			return false;

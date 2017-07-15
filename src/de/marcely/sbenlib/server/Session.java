@@ -1,9 +1,13 @@
 package de.marcely.sbenlib.server;
 
 import java.net.InetAddress;
+import java.util.ArrayList;
+import java.util.List;
 
+import de.marcely.sbenlib.network.ConnectionState;
 import de.marcely.sbenlib.network.packets.Packet;
 import lombok.Getter;
+import lombok.Setter;
 
 public class Session {
 	
@@ -12,6 +16,12 @@ public class Session {
 	@Getter private final int port;
 	@Getter private final Thread thread;
 	@Getter private final Object obj;
+	
+	@Getter @Setter private ConnectionState connectionState = ConnectionState.NotStarted;
+	@Getter @Setter private long ping = 0;
+	
+	@Getter private List<SessionEventListener> listeners = new ArrayList<SessionEventListener>();
+	public long pingLastUpdate = 0;
 	
 	public Session(SBENServer server, InetAddress address, int port){
 		this(server, address, port, null, null);

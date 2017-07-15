@@ -8,6 +8,7 @@ import de.marcely.sbenlib.network.ConnectionInfo;
 import de.marcely.sbenlib.network.ConnectionState;
 import de.marcely.sbenlib.network.packets.PacketData;
 import lombok.Getter;
+import lombok.Setter;
 
 public abstract class SBENServerConnection {
 	
@@ -15,6 +16,7 @@ public abstract class SBENServerConnection {
 	private final SocketHandler socketHandler;
 	
 	@Getter private ConnectionState connectionState = ConnectionState.NotStarted;
+	@Getter @Setter private long ping = 0;
 	private final List<Timer> registredTimers = new ArrayList<Timer>();
 	
 	public SBENServerConnection(ConnectionInfo connInfo){
@@ -35,6 +37,9 @@ public abstract class SBENServerConnection {
 	}
 	
 	public void setConnectionState(ConnectionState state){
+		if(this.connectionState == state)
+			return;
+		
 		if(state == ConnectionState.Disconnected){
 			for(Timer t:registredTimers)
 				t.cancel();
@@ -58,4 +63,6 @@ public abstract class SBENServerConnection {
 	public abstract void onStateChange(ConnectionState state);
 	
 	public abstract void onPacketReceive(PacketData packet);
+	
+	public abstract void onDisconnect(String reason);
 }

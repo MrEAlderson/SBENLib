@@ -17,16 +17,20 @@ public class Test {
 		System.out.println(server.run());
 		SBENServerConnection client = new SBENServerConnection(connInfo){
 			public void onStateChange(ConnectionState state){
-				
+				System.out.println(state);
 			}
 
 			public void onPacketReceive(PacketData packet){
+				
+			}
+
+			public void onDisconnect(String reason){
+				System.out.println("disconnect: " + reason);
 			}
 		};
 		System.out.println(client.run());
 		
-		Util.sleep(500*3);
-		server.close();
+		Util.sleep(500*5);
 		
 		System.out.println("END");
 	}

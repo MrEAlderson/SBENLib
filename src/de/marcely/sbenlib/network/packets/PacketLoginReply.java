@@ -23,6 +23,6 @@ public class PacketLoginReply extends Packet {
 
 	@Override
 	protected void _decode(byte[] data){
-		
+		reply = this.readStream.readByte();
 	}
 }

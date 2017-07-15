@@ -6,10 +6,13 @@ import java.util.List;
 
 import de.marcely.sbenlib.compression.Base64;
 import de.marcely.sbenlib.network.ByteArraysCombiner;
+import de.marcely.sbenlib.network.ConnectionState;
 import de.marcely.sbenlib.network.Network;
 import de.marcely.sbenlib.network.packets.Packet;
 import de.marcely.sbenlib.network.packets.PacketLogin;
 import de.marcely.sbenlib.network.packets.PacketLoginReply;
+import de.marcely.sbenlib.network.packets.PacketPing;
+import de.marcely.sbenlib.network.packets.PacketPong;
 import de.marcely.sbenlib.server.protocol.Protocol;
 import lombok.Getter;
 
@@ -27,10 +30,14 @@ public class SocketHandler {
 		
 		this.protocol = server.getConnectionInfo().PROTOCOL.getServerInstance(server.getConnectionInfo(), server, new ServerEventListener(){
 			public void onClientRequest(Session session){
+				session.setConnectionState(ConnectionState.Connecting);
+				
 				sessions.put(session.getIdentifier(), session);
 			}
 
 			public void onClientDisconnect(Session session){
+				session.setConnectionState(ConnectionState.Disconnected);
+				
 				sessions.remove(session.getIdentifier());
 			}
 
@@ -47,22 +54,12 @@ public class SocketHandler {
 					switch(id){
 					case Packet.TYPE_LOGIN:
 						
-						final PacketLogin packet = new PacketLogin();
-						packet.decode(rawPacket);
-						
-						final PacketLoginReply packet_reply = new PacketLoginReply();
-						
-						if(packet.version_protocol == Network.PROTOCOL_VERSION)
-							packet_reply.reply = PacketLoginReply.REPLY_SUCCESS;
-						else if(packet.version_protocol < Network.PROTOCOL_VERSION)
-							packet_reply.reply = PacketLoginReply.REPLY_FAILED_PROTOCOL_OUTDATED_CLIENT;
-						else
-							packet_reply.reply = PacketLoginReply.REPLY_FAILED_PROTOCOL_OUTDATED_SERVER;
-						
-						packet_reply.encode();
-						session.sendPacket(packet_reply);
+						final PacketLogin packet_login = new PacketLogin();
+						packet_login.decode(rawPacket);
+						workWithPacket(session, packet_login);
 						
 						break;
+						
 					case Packet.TYPE_DATA:
 						break;
 					case Packet.TYPE_ACK:
@@ -70,6 +67,11 @@ public class SocketHandler {
 					case Packet.TYPE_NAK:
 						break;
 					case Packet.TYPE_PING:
+						
+						final PacketPing packet_ping = new PacketPing();
+						packet_ping.decode(rawPacket);
+						workWithPacket(session, packet_ping);
+						
 						break;
 					}
 				}
@@ -106,5 +108,34 @@ public class SocketHandler {
 	
 	public boolean sendPacket(Session session, Packet packet){
 		return protocol.sendPacket(session, packet);
+	}
+	
+	private void workWithPacket(Session session, PacketLogin packet){
+		final PacketLoginReply packet_reply = new PacketLoginReply();
+		
+		if(packet.version_protocol == Network.PROTOCOL_VERSION){
+			packet_reply.reply = PacketLoginReply.REPLY_SUCCESS;
+			
+			session.setConnectionState(ConnectionState.Connected);
+		}else if(packet.version_protocol < Network.PROTOCOL_VERSION)
+			packet_reply.reply = PacketLoginReply.REPLY_FAILED_PROTOCOL_OUTDATED_CLIENT;
+		else
+			packet_reply.reply = PacketLoginReply.REPLY_FAILED_PROTOCOL_OUTDATED_SERVER;
+		
+		packet_reply.encode();
+		session.sendPacket(packet_reply);
+	}
+	
+	private void workWithPacket(Session session, PacketPing packet){
+		final PacketPong packet_pong = new PacketPong();
+		
+		packet_pong.time = packet.time;
+		
+		packet_pong.encode();
+		session.sendPacket(packet_pong);
+		
+		// get ping
+		session.setPing((packet.time - session.pingLastUpdate)-Network.PING_UPDATE);
+		session.pingLastUpdate = packet.time;
 	}
 }

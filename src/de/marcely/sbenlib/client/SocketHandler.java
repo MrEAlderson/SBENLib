@@ -1,6 +1,8 @@
 package de.marcely.sbenlib.client;
 
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import de.marcely.sbenlib.client.protocol.Protocol;
 import de.marcely.sbenlib.compression.Base64;
@@ -9,6 +11,9 @@ import de.marcely.sbenlib.network.ConnectionState;
 import de.marcely.sbenlib.network.Network;
 import de.marcely.sbenlib.network.packets.Packet;
 import de.marcely.sbenlib.network.packets.PacketLogin;
+import de.marcely.sbenlib.network.packets.PacketLoginReply;
+import de.marcely.sbenlib.network.packets.PacketPing;
+import de.marcely.sbenlib.network.packets.PacketPong;
 import de.marcely.sbenlib.util.Util;
 import lombok.Getter;
 
@@ -23,7 +28,7 @@ public class SocketHandler {
 		this.server = server;
 		combiner = new ByteArraysCombiner(Packet.SEPERATOR[0]);
 		
-		this.protocol = server.getConnectionInfo().PROTOCOL.getClientInstance(server.getConnectionInfo(), new ServerEventListener(){
+		this.protocol = server.getConnectionInfo().PROTOCOL.getClientInstance(server.getConnectionInfo(), this, new ServerEventListener(){
 			public void onPacketReceive(byte[] bytes){
 				final List<byte[]> packets = combiner.addBytes(bytes);
 				
@@ -36,6 +41,19 @@ public class SocketHandler {
 					
 					switch(id){
 					case Packet.TYPE_LOGIN_REPLY:
+						
+						final PacketLoginReply packet_reply = new PacketLoginReply();
+						packet_reply.decode(rawPacket);
+						
+						workWithPacket(packet_reply);
+						
+						break;
+					case Packet.TYPE_PONG:
+						
+						final PacketPong packet_pong = new PacketPong();
+						packet_pong.decode(rawPacket);
+						
+						workWithPacket(packet_pong);
 						
 						break;
 					}
@@ -81,6 +99,7 @@ public class SocketHandler {
 	public boolean close(){
 		if(isRunning()){
 			this.getServer().setConnectionState(ConnectionState.Disconnected);
+			this.getServer().onDisconnect("SOCKET_CLOSE");
 			
 			return protocol.close();
 		}else
@@ -89,5 +108,47 @@ public class SocketHandler {
 	
 	public boolean sendPacket(Packet packet){
 		return protocol.sendPacket(packet);
+	}
+	
+	private void workWithPacket(PacketLoginReply packet){
+		switch(packet.reply){
+		case PacketLoginReply.REPLY_SUCCESS:
+			getServer().setConnectionState(ConnectionState.Connected);
+			
+			// register ping timer
+			final Timer timer_ping = new Timer();
+			timer_ping.schedule(new TimerTask(){
+				public void run(){
+					final PacketPing packet = new PacketPing();
+					
+					packet.time = System.currentTimeMillis();
+					
+					packet.encode();
+					sendPacket(packet);
+				}
+			}, Network.PING_UPDATE, Network.PING_UPDATE);
+			
+			getServer().registerTimer(timer_ping);
+			
+			break;
+		case PacketLoginReply.REPLY_FAILED_PROTOCOL_OUTDATED_CLIENT:
+			getServer().setConnectionState(ConnectionState.Disconnected);
+			getServer().onDisconnect("LOGIN_PROTOCOL_OUTDATED_CLIENT");
+			break;
+		case PacketLoginReply.REPLY_FAILED_PROTOCOL_OUTDATED_SERVER:
+			getServer().setConnectionState(ConnectionState.Disconnected);
+			getServer().onDisconnect("LOGIN_PROTOCOL_OUTDATED_SERVER");
+			break;
+		case PacketLoginReply.REPLY_FAILED_UNKOWN:
+			getServer().setConnectionState(ConnectionState.Disconnected);
+			getServer().onDisconnect("LOGIN_UNKOWN");
+			break;
+		}
+	}
+	
+	private void workWithPacket(PacketPong packet){
+		final long delay = System.currentTimeMillis() - packet.time;
+		
+		getServer().setPing(delay);
 	}
 }

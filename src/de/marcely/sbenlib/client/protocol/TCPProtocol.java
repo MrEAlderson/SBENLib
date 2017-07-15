@@ -7,13 +7,14 @@ import java.net.Socket;
 import de.marcely.sbenlib.network.ConnectionInfo;
 import de.marcely.sbenlib.network.ProtocolType;
 import de.marcely.sbenlib.client.ServerEventListener;
+import de.marcely.sbenlib.client.SocketHandler;
 
 public class TCPProtocol extends Protocol {
 	
 	private Socket socket;
 	
-	public TCPProtocol(ConnectionInfo connInfo, ServerEventListener listener){
-		super(connInfo, listener);
+	public TCPProtocol(ConnectionInfo connInfo, SocketHandler socketHandler, ServerEventListener listener){
+		super(connInfo, socketHandler, listener);
 	}
 
 	@Override

@@ -1,18 +1,26 @@
 package de.marcely.sbenlib.network;
 
 import de.marcely.sbenlib.server.SBENServer;
+import lombok.Getter;
 
 public enum ProtocolType {
 	
-	UDP,
-	TCP;
+	UDP(true),
+	TCP(false);
 	
-	public de.marcely.sbenlib.client.protocol.Protocol getClientInstance(ConnectionInfo conn, de.marcely.sbenlib.client.ServerEventListener listener){
+	@Getter private final boolean requiresAckNack;
+	
+	private ProtocolType(boolean requiresAckNack){
+		this.requiresAckNack = requiresAckNack;
+	}
+	
+	
+	public de.marcely.sbenlib.client.protocol.Protocol getClientInstance(ConnectionInfo conn, de.marcely.sbenlib.client.SocketHandler socketHandler, de.marcely.sbenlib.client.ServerEventListener listener){
 		switch(this){
 		case UDP:
-			return new de.marcely.sbenlib.client.protocol.UDPProtocol(conn, listener);
+			return new de.marcely.sbenlib.client.protocol.UDPProtocol(conn, socketHandler, listener);
 		case TCP:
-			return new de.marcely.sbenlib.client.protocol.TCPProtocol(conn, listener);
+			return new de.marcely.sbenlib.client.protocol.TCPProtocol(conn, socketHandler, listener);
 		default:
 			return null;
 		}
