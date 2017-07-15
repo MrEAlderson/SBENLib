@@ -1,5 +1,5 @@
 # SBENLib
-This library provides a complete network system which is very easy to use. You are able to create a whole server with only a few lines!<br />
+This library provides a complete network system which is very easy to use. You are able to create a whole network with only a few lines!<br />
 The other very great feature of this library is that you are able decide easily between the protocols UDP or TCP and between ZLib and GLib.<br />
 An other great feature is that you are able to decide between a secured or a normal data packet.<br />
 A secured packet is getting encrypted before it's getting send.<br />
