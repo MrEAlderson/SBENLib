@@ -32,6 +32,7 @@ public class Test {
 				});
 			}
 		};
+		server.run();
 		
 		SBENServerConnection client = new SBENServerConnection(connInfo){
 			public void onStateChange(ConnectionState state){
@@ -43,13 +44,14 @@ public class Test {
 			}
 
 			public void onDisconnect(String reason){
-				System.out.println("disconnect: " + reason);
+				System.out.println("reason");
 			}
 		};
-		System.out.println(client.run());
+		client.run();
 		
 		Util.sleep(500*5);
 		
 		System.out.println("END");
+		server.close();
 	}
 }

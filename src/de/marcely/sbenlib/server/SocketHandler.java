@@ -103,6 +103,9 @@ public class SocketHandler {
 	}
 	
 	public boolean close(){
+		for(Session session:sessions.values())
+			closeSession(session, "SERVER_CLOSED");
+		
 		return protocol.close();
 	}
 	

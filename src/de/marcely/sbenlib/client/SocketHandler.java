@@ -4,12 +4,15 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import javax.annotation.Nullable;
+
 import de.marcely.sbenlib.client.protocol.Protocol;
 import de.marcely.sbenlib.compression.Base64;
 import de.marcely.sbenlib.network.ByteArraysCombiner;
 import de.marcely.sbenlib.network.ConnectionState;
 import de.marcely.sbenlib.network.Network;
 import de.marcely.sbenlib.network.packets.Packet;
+import de.marcely.sbenlib.network.packets.PacketClose;
 import de.marcely.sbenlib.network.packets.PacketLogin;
 import de.marcely.sbenlib.network.packets.PacketLoginReply;
 import de.marcely.sbenlib.network.packets.PacketPing;
@@ -48,12 +51,22 @@ public class SocketHandler {
 						workWithPacket(packet_reply);
 						
 						break;
+					
 					case Packet.TYPE_PONG:
 						
 						final PacketPong packet_pong = new PacketPong();
 						packet_pong.decode(rawPacket);
 						
 						workWithPacket(packet_pong);
+						
+						break;
+						
+					case Packet.TYPE_CLOSE:
+						
+						final PacketClose packet_close = new PacketClose();
+						packet_close.decode(rawPacket);
+						
+						workWithPacket(packet_close);
 						
 						break;
 					}
@@ -97,9 +110,16 @@ public class SocketHandler {
 	}
 	
 	public boolean close(){
+		return close(null);
+	}
+	
+	public boolean close(@Nullable String reason){
+		if(reason == null)
+			reason = "SOCKET_CLIENT_CLOSE";
+		
 		if(isRunning()){
 			this.getServer().setConnectionState(ConnectionState.Disconnected);
-			this.getServer().onDisconnect("SOCKET_CLOSE");
+			this.getServer().onDisconnect(reason);
 			
 			return protocol.close();
 		}else
@@ -150,5 +170,9 @@ public class SocketHandler {
 		final long delay = System.currentTimeMillis() - packet.time;
 		
 		getServer().setPing(delay);
+	}
+	
+	private void workWithPacket(PacketClose packet){
+		close(packet.reason);
 	}
 }
