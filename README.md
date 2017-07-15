@@ -17,7 +17,7 @@ final SBENServer server = new SBENServer(new ConnectionInfo("localhost", 6234, P
         }
       }
 
-      public void onPacketReceive(PacketData packet){
+      public void onPacketReceive(DataPacket packet){
         // Received packet
       }
 
@@ -38,7 +38,7 @@ final SBENServerConnection client = new SBENServerConnection(new ConnectionInfo(
     }
   }
 
-  public void onPacketReceive(PacketData packet){
+  public void onPacketReceive(DataPacket packet){
      // Received packet
   }
 
@@ -51,7 +51,7 @@ final boolean success = server.run();
 
 # State
 This library is currently in a very early stage.<br />
-Currently you are not even able to create your own packets.
+You are already able to receive and send packets, but a stable and secure connectivity is not quaranteed.
 
 # Requirements
 - Lombok
