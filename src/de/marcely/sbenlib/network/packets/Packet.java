@@ -15,6 +15,7 @@ public abstract class Packet {
 	public static final byte TYPE_PONG = (byte) 0x4;
 	public static final byte TYPE_ACK = (byte) 0x5;
 	public static final byte TYPE_NAK = (byte) 0x6;
+	public static final byte TYPE_CLOSE = (byte) 0x7;
 	public static final byte[] SEPERATOR;
 	
 	@Getter protected BufferedWriteStream writeStream;

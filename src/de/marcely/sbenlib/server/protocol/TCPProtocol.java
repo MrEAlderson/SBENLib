@@ -43,9 +43,10 @@ public class TCPProtocol extends Protocol {
 								
 								final Thread thread = new Thread(){
 									public void run(){
+										final Session session = listener.getSession(client.getInetAddress(), client.getPort());
+										
 										try{
 											final InputStream inStream = client.getInputStream();
-											final Session session = listener.getSession(client.getInetAddress(), client.getPort());
 											
 											while(running){
 												if(inStream.available() >= 1){
@@ -56,6 +57,15 @@ public class TCPProtocol extends Protocol {
 												}
 											}
 										}catch(IOException e){
+											final String reason = e.getMessage();
+											
+											if(reason != null){
+												if(reason.equals("socket closed")){
+													
+													return;
+												}
+											}
+											
 											e.printStackTrace();
 										}
 									}
@@ -70,8 +80,10 @@ public class TCPProtocol extends Protocol {
 								final String reason = e.getMessage();
 								
 								if(reason != null){
-									if(reason.equals("socket closed"))
+									if(reason.equals("socket closed")){
+										server.getSocketHandler().close();
 										return;
+									}
 								}
 								
 								e.printStackTrace();
@@ -114,6 +126,21 @@ public class TCPProtocol extends Protocol {
 			try{
 				((OutputStream) session.getObj()).write(packet);
 				sendPacket(session, Packet.SEPERATOR);
+			}catch(IOException e){
+				e.printStackTrace();
+				return false;
+			}
+			
+			return true;
+		}else
+			return false;
+	}
+
+	@Override
+	protected boolean _closeSession(Session session){
+		if(isRunning() && session.isConnected()){
+			try{
+				((Socket) session.getObj()).close();
 			}catch(IOException e){
 				e.printStackTrace();
 				return false;

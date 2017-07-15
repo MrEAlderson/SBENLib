@@ -4,6 +4,8 @@ import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 import de.marcely.sbenlib.network.ConnectionState;
 import de.marcely.sbenlib.network.packets.Packet;
 import lombok.Getter;
@@ -17,7 +19,7 @@ public class Session {
 	@Getter private final Thread thread;
 	@Getter private final Object obj;
 	
-	@Getter @Setter private ConnectionState connectionState = ConnectionState.NotStarted;
+	@Getter private ConnectionState connectionState = ConnectionState.NotStarted;
 	@Getter @Setter private long ping = 0;
 	
 	@Getter private List<SessionEventListener> listeners = new ArrayList<SessionEventListener>();
@@ -45,5 +47,38 @@ public class Session {
 	
 	public void sendPacket(Packet packet){
 		server.getSocketHandler().sendPacket(this, packet);
+	}
+	
+	public void setConnectionState(ConnectionState state){
+		if(this.connectionState == state)
+			return;
+		
+		for(SessionEventListener listener:listeners)
+			listener.onStateChange(state);
+		
+		this.connectionState = state;
+	}
+	
+	public void registerListener(SessionEventListener listener){
+		this.listeners.add(listener);
+	}
+	
+	public boolean unregisterListener(SessionEventListener listener){
+		return this.listeners.remove(listener);
+	}
+	
+	public void close(){
+		close("SOCKET_CLIENT_CLOSED");
+	}
+	
+	public void close(@Nullable String reason){
+		if(reason == null)
+			reason = "UNKOWN";
+		
+		server.getSocketHandler().closeSession(this, reason);
+	}
+	
+	public boolean isConnected(){
+		return server.getSocketHandler().getSessions().containsKey(getIdentifier());
 	}
 }

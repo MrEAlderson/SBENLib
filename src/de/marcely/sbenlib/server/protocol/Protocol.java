@@ -4,6 +4,7 @@ import de.marcely.sbenlib.compression.Base64;
 import de.marcely.sbenlib.network.ConnectionInfo;
 import de.marcely.sbenlib.network.ProtocolType;
 import de.marcely.sbenlib.network.packets.Packet;
+import de.marcely.sbenlib.network.packets.PacketClose;
 import de.marcely.sbenlib.server.SBENServer;
 import de.marcely.sbenlib.server.ServerEventListener;
 import de.marcely.sbenlib.server.ServerStartInfo;
@@ -46,12 +47,26 @@ public abstract class Protocol {
 		return _sendPacket(session, Packet.SEPERATOR);
 	}
 	
+	public boolean closeSession(Session session, String reason){
+		if(session.isConnected()){
+			final PacketClose packet_close = new PacketClose();
+			packet_close.reason = reason;
+			packet_close.encode();
+			
+			sendPacket(session, packet_close);
+			return _closeSession(session);
+		}else
+			return false;
+	}
+	
 	
 	public abstract ProtocolType getType();
 	
 	protected abstract ServerStartInfo _run();
 	
 	public abstract boolean close();
+	
+	protected abstract boolean _closeSession(Session session);
 	
 	protected abstract boolean _sendPacket(Session session, byte[] packet);
 }

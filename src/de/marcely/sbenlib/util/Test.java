@@ -7,14 +7,32 @@ import de.marcely.sbenlib.network.ConnectionState;
 import de.marcely.sbenlib.network.ProtocolType;
 import de.marcely.sbenlib.network.packets.PacketData;
 import de.marcely.sbenlib.server.SBENServer;
+import de.marcely.sbenlib.server.Session;
+import de.marcely.sbenlib.server.SessionEventListener;
 
 public class Test {
 	
 	public static void main(String[] args){
 		final ConnectionInfo connInfo = new ConnectionInfo("192.168.178.59", 6234, ProtocolType.UDP, CompressionType.ZLib);
 		
-		SBENServer server = new SBENServer(connInfo, 1);
-		System.out.println(server.run());
+		SBENServer server = new SBENServer(connInfo, 1){
+			public void onSessionRequest(Session session){
+				session.registerListener(new SessionEventListener(){
+					public void onStateChange(ConnectionState state){
+						
+					}
+
+					public void onPacketReceive(PacketData packet){
+						
+					}
+					
+					public void onDisconnect(String reason){
+						
+					}
+				});
+			}
+		};
+		
 		SBENServerConnection client = new SBENServerConnection(connInfo){
 			public void onStateChange(ConnectionState state){
 				System.out.println(state);

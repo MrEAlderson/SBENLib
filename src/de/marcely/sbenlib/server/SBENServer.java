@@ -3,7 +3,7 @@ package de.marcely.sbenlib.server;
 import de.marcely.sbenlib.network.ConnectionInfo;
 import lombok.Getter;
 
-public class SBENServer {
+public abstract class SBENServer {
 	
 	@Getter private final ConnectionInfo connectionInfo;
 	@Getter private final SocketHandler socketHandler;
@@ -28,4 +28,6 @@ public class SBENServer {
 	public boolean close(){
 		return socketHandler.close();
 	}
+	
+	public abstract void onSessionRequest(Session session);
 }

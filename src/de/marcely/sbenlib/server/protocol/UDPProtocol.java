@@ -55,8 +55,9 @@ public class UDPProtocol extends Protocol {
 								final String reason = e.getMessage();
 								
 								if(reason != null){
-									if(reason.equals("socket closed"))
+									if(reason.equals("socket closed")){
 										return;
+									}
 								}
 								
 								e.printStackTrace();
@@ -101,5 +102,10 @@ public class UDPProtocol extends Protocol {
 			return true;
 		}else
 			return false;
+	}
+
+	@Override
+	protected boolean _closeSession(Session session){
+		return isRunning() && session.isConnected();
 	}
 }

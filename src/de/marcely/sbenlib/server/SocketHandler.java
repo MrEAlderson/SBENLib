@@ -110,6 +110,24 @@ public class SocketHandler {
 		return protocol.sendPacket(session, packet);
 	}
 	
+	public boolean closeSession(Session session, String reason){
+		if(!session.isConnected())
+			return false;
+		
+		final boolean success = protocol.closeSession(session, reason);
+		
+		this.sessions.remove(session.getIdentifier());
+		for(SessionEventListener listener:session.getListeners())
+			listener.onDisconnect(reason);
+		
+		session.setConnectionState(ConnectionState.Disconnected);
+		
+		return success;
+	}
+	
+	
+	
+	
 	private void workWithPacket(Session session, PacketLogin packet){
 		final PacketLoginReply packet_reply = new PacketLoginReply();
 		
