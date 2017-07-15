@@ -9,10 +9,12 @@ import de.marcely.sbenlib.network.ByteArraysCombiner;
 import de.marcely.sbenlib.network.ConnectionState;
 import de.marcely.sbenlib.network.Network;
 import de.marcely.sbenlib.network.packets.Packet;
+import de.marcely.sbenlib.network.packets.PacketData;
 import de.marcely.sbenlib.network.packets.PacketLogin;
 import de.marcely.sbenlib.network.packets.PacketLoginReply;
 import de.marcely.sbenlib.network.packets.PacketPing;
 import de.marcely.sbenlib.network.packets.PacketPong;
+import de.marcely.sbenlib.network.packets.data.DataPacket;
 import de.marcely.sbenlib.server.protocol.Protocol;
 import lombok.Getter;
 
@@ -61,6 +63,12 @@ public class SocketHandler {
 						break;
 						
 					case Packet.TYPE_DATA:
+						
+						final PacketData packet_data = new PacketData();
+						packet_data.packetsData = getServer().getPacketsData();
+						packet_data.decode(rawPacket);
+						workWithPacket(session, packet_data);
+						
 						break;
 					case Packet.TYPE_ACK:
 						break;
@@ -158,5 +166,12 @@ public class SocketHandler {
 		// get ping
 		session.setPing((packet.time - session.pingLastUpdate)-Network.PING_UPDATE);
 		session.pingLastUpdate = packet.time;
+	}
+	
+	private void workWithPacket(Session session, PacketData packet){
+		final DataPacket dataPacket = packet.data;
+		
+		for(SessionEventListener listener:session.getListeners())
+			listener.onPacketReceive(dataPacket);
 	}
 }

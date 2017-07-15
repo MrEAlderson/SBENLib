@@ -1,5 +1,8 @@
 package de.marcely.sbenlib.network.packets;
 
+import de.marcely.sbenlib.network.PacketsData;
+import de.marcely.sbenlib.network.packets.data.DataPacket;
+import de.marcely.sbenlib.util.BufferedWriteStream;
 import de.marcely.sbenlib.util.Util;
 
 public class PacketData extends Packet {
@@ -9,20 +12,37 @@ public class PacketData extends Packet {
 	public static final byte PRIORITY_VERY_HIGH = (byte) 0x2; // care if delivered and if it's in the correct order
 	
 	public int id = Util.RAND.nextInt(255);
-	public int priority = PRIORITY_LOW;
+	public byte priority = PRIORITY_LOW;
+	
+	public DataPacket data;
+	public PacketsData packetsData;
 	
 	@Override
 	public byte getType(){
-		return 0;
+		return TYPE_DATA;
 	}
 	
 	@Override
 	protected byte[] _encode(){
-		return null;
+		System.out.println(id);
+		this.writeStream.writeUnsignedShort(id);
+		this.writeStream.writeByte(priority);
+		this.writeStream.writeByte(data.getPacketID());
+		
+		data.setWriteStream(new BufferedWriteStream());
+		data.encode();
+		this.writeStream.write(data.getWriteBytes());
+		
+		return this.writeStream.toByteArray();
 	}
 	
 	@Override
 	protected void _decode(byte[] data){
+		this.id = this.readStream.readUnsignedShort();
+		this.priority = this.readStream.readByte();
 		
+		this.data = packetsData.getPacket(this.readStream.readByte());
+		this.data.setReadStream(this.readStream);
+		this.data.decode();
 	}
 }

@@ -6,7 +6,8 @@ import java.util.Timer;
 
 import de.marcely.sbenlib.network.ConnectionInfo;
 import de.marcely.sbenlib.network.ConnectionState;
-import de.marcely.sbenlib.network.packets.PacketData;
+import de.marcely.sbenlib.network.PacketsData;
+import de.marcely.sbenlib.network.packets.data.DataPacket;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -18,6 +19,7 @@ public abstract class SBENServerConnection {
 	@Getter private ConnectionState connectionState = ConnectionState.NotStarted;
 	@Getter @Setter private long ping = 0;
 	private final List<Timer> registredTimers = new ArrayList<Timer>();
+	@Getter @Setter private PacketsData packetsData = new PacketsData();
 	
 	public SBENServerConnection(ConnectionInfo connInfo){
 		this.connectionInfo = connInfo;
@@ -59,10 +61,14 @@ public abstract class SBENServerConnection {
 		this.registredTimers.remove(timer);
 	}
 	
+	public void sendPacket(DataPacket packet){
+		this.socketHandler.sendPacket(packet);
+	}
+	
 	
 	public abstract void onStateChange(ConnectionState state);
 	
-	public abstract void onPacketReceive(PacketData packet);
+	public abstract void onPacketReceive(DataPacket packet);
 	
 	public abstract void onDisconnect(String reason);
 }

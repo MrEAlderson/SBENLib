@@ -13,10 +13,12 @@ import de.marcely.sbenlib.network.ConnectionState;
 import de.marcely.sbenlib.network.Network;
 import de.marcely.sbenlib.network.packets.Packet;
 import de.marcely.sbenlib.network.packets.PacketClose;
+import de.marcely.sbenlib.network.packets.PacketData;
 import de.marcely.sbenlib.network.packets.PacketLogin;
 import de.marcely.sbenlib.network.packets.PacketLoginReply;
 import de.marcely.sbenlib.network.packets.PacketPing;
 import de.marcely.sbenlib.network.packets.PacketPong;
+import de.marcely.sbenlib.network.packets.data.DataPacket;
 import de.marcely.sbenlib.util.Util;
 import lombok.Getter;
 
@@ -67,6 +69,16 @@ public class SocketHandler {
 						packet_close.decode(rawPacket);
 						
 						workWithPacket(packet_close);
+						
+						break;
+						
+					case Packet.TYPE_DATA:
+						
+						final PacketData packet_data = new PacketData();
+						packet_data.packetsData = getServer().getPacketsData();
+						packet_data.decode(rawPacket);
+						
+						workWithPacket(packet_data);
 						
 						break;
 					}
@@ -126,9 +138,22 @@ public class SocketHandler {
 			return false;
 	}
 	
+	public boolean sendPacket(DataPacket packet){
+		final PacketData packet_data = new PacketData();
+		packet_data.data = packet;
+		packet_data.packetsData = getServer().getPacketsData();
+		packet_data.encode();
+		
+		return sendPacket(packet_data);
+	}
+	
 	public boolean sendPacket(Packet packet){
 		return protocol.sendPacket(packet);
 	}
+	
+	
+	
+	
 	
 	private void workWithPacket(PacketLoginReply packet){
 		switch(packet.reply){
@@ -174,5 +199,11 @@ public class SocketHandler {
 	
 	private void workWithPacket(PacketClose packet){
 		close(packet.reason);
+	}
+	
+	private void workWithPacket(PacketData packet){
+		final DataPacket dataPacket = packet.data;
+		
+		getServer().onPacketReceive(dataPacket);
 	}
 }

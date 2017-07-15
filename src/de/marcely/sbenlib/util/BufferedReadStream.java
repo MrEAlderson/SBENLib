@@ -76,7 +76,7 @@ public class BufferedReadStream extends ByteArrayInputStream {
 	 * @return Reads a unsigned short (0 - 255)
 	 */
 	public int readUnsignedShort(){
-		return readSignedShort() & 0xffff;
+		return readSignedShort() & 0x00ff;
 	}
 	
 	/**

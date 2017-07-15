@@ -40,7 +40,7 @@ public class BufferedWriteStream extends ByteArrayOutputStream {
 	}
 	
 	public void writeUnsignedShort(int s){
-		writeSignedInt(s & 0x3FFF);
+		writeSignedShort((short) (s & 0x00FF));
 	}
 	
 	public void writeSignedFloat(float f){
