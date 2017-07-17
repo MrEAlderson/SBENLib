@@ -12,6 +12,19 @@ public class BufferedReadStream extends ByteArrayInputStream {
 	
 	@Override
 	public int read(byte[] array){
+		// close automaticly if buffer is empty
+		if(this.available() == 0){
+			try{
+				this.close();
+				this.finalize();
+			}catch(Throwable e){
+				e.printStackTrace();
+			}
+			
+			return 0;
+		}
+		
+		// read
 		try{
 			return super.read(array);
 		}catch(IOException e){
