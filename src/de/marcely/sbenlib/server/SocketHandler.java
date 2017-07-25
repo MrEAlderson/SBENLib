@@ -4,6 +4,8 @@ import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.List;
 
+import javax.crypto.spec.SecretKeySpec;
+
 import de.marcely.sbenlib.compression.Base64;
 import de.marcely.sbenlib.network.ByteArraysCombiner;
 import de.marcely.sbenlib.network.ConnectionState;
@@ -145,7 +147,9 @@ public class SocketHandler {
 		if(packet.version_protocol == Network.PROTOCOL_VERSION){
 			packet_reply.reply = PacketLoginReply.REPLY_SUCCESS;
 			
+			session.setKey(new SecretKeySpec(packet.security_id, "AES"));
 			session.setConnectionState(ConnectionState.Connected);
+			
 		}else if(packet.version_protocol < Network.PROTOCOL_VERSION)
 			packet_reply.reply = PacketLoginReply.REPLY_FAILED_PROTOCOL_OUTDATED_CLIENT;
 		else

@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
 
+import javax.crypto.spec.SecretKeySpec;
+
 import de.marcely.sbenlib.network.ConnectionInfo;
 import de.marcely.sbenlib.network.ConnectionState;
 import de.marcely.sbenlib.network.PacketsData;
@@ -20,6 +22,7 @@ public abstract class SBENServerConnection {
 	@Getter @Setter private long ping = 0;
 	private final List<Timer> registredTimers = new ArrayList<Timer>();
 	@Getter @Setter private PacketsData packetsData = new PacketsData();
+	@Getter public SecretKeySpec key = null;
 	
 	public SBENServerConnection(ConnectionInfo connInfo){
 		this.connectionInfo = connInfo;

@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.annotation.Nullable;
+import javax.crypto.spec.SecretKeySpec;
 
 import de.marcely.sbenlib.network.ConnectionState;
 import de.marcely.sbenlib.network.packets.Packet;
@@ -21,6 +22,7 @@ public class Session {
 	
 	@Getter private ConnectionState connectionState = ConnectionState.NotStarted;
 	@Getter @Setter private long ping = 0;
+	@Getter @Setter private SecretKeySpec key;
 	
 	@Getter private List<SessionEventListener> listeners = new ArrayList<SessionEventListener>();
 	public long pingLastUpdate = 0;

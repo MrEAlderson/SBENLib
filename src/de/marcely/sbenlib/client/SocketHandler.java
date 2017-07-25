@@ -5,6 +5,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import javax.annotation.Nullable;
+import javax.crypto.spec.SecretKeySpec;
 
 import de.marcely.sbenlib.client.protocol.Protocol;
 import de.marcely.sbenlib.compression.Base64;
@@ -103,9 +104,11 @@ public class SocketHandler {
 			if(success){
 				this.getServer().setConnectionState(ConnectionState.Connecting);
 				
+				server.key = new SecretKeySpec(Util.generateRandomSecurityID(), "AES");
+				
 				// send login packet
 				final PacketLogin packet = new PacketLogin();
-				packet.security_id = Util.generateRandomSecurityID();
+				packet.security_id = server.key.getEncoded();
 				packet.version_protocol = Network.PROTOCOL_VERSION;
 				packet.encode();
 				
