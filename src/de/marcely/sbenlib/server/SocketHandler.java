@@ -119,6 +119,15 @@ public class SocketHandler {
 		return protocol.close();
 	}
 	
+	public boolean sendPacket(Session session, DataPacket packet){
+		final PacketData packet_data = new PacketData();
+		packet_data.data = packet;
+		packet_data.packetsData = getServer().getPacketsData();
+		packet_data.encode();
+		
+		return sendPacket(session, packet_data);
+	}
+	
 	public boolean sendPacket(Session session, Packet packet){
 		return protocol.sendPacket(session, packet);
 	}
@@ -147,6 +156,7 @@ public class SocketHandler {
 		if(packet.version_protocol == Network.PROTOCOL_VERSION){
 			packet_reply.reply = PacketLoginReply.REPLY_SUCCESS;
 			
+			server.onSessionRequest(session);
 			session.setKey(new SecretKeySpec(packet.security_id, "AES"));
 			session.setConnectionState(ConnectionState.Connected);
 			

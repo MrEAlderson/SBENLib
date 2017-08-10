@@ -80,7 +80,6 @@ public class SocketHandler {
 						packet_data.decode(rawPacket);
 						
 						workWithPacket(packet_data);
-						
 						break;
 					}
 				}

@@ -59,8 +59,6 @@ public class Base64 {
 			buffer[i] = (byte) Integer.parseInt(binrary, 2);
 		}
 		
-		System.out.println(new String(buffer));
-		
 		// convert bits to bytes
 		
 		

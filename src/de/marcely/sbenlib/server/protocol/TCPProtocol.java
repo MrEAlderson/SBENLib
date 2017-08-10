@@ -8,7 +8,6 @@ import java.net.Socket;
 
 import de.marcely.sbenlib.network.ConnectionInfo;
 import de.marcely.sbenlib.network.ProtocolType;
-import de.marcely.sbenlib.network.packets.Packet;
 import de.marcely.sbenlib.server.SBENServer;
 import de.marcely.sbenlib.server.ServerEventListener;
 import de.marcely.sbenlib.server.ServerStartInfo;
@@ -59,12 +58,8 @@ public class TCPProtocol extends Protocol {
 										}catch(IOException e){
 											final String reason = e.getMessage();
 											
-											if(reason != null){
-												if(reason.equals("socket closed")){
-													
-													return;
-												}
-											}
+											if(reason != null && (reason.equals("socket closed") || reason.equals("Stream closed.")))
+												return;
 											
 											e.printStackTrace();
 										}
@@ -125,7 +120,6 @@ public class TCPProtocol extends Protocol {
 		if(running){
 			try{
 				((OutputStream) session.getObj()).write(packet);
-				sendPacket(session, Packet.SEPERATOR);
 			}catch(IOException e){
 				e.printStackTrace();
 				return false;
@@ -140,7 +134,7 @@ public class TCPProtocol extends Protocol {
 	protected boolean _closeSession(Session session){
 		if(isRunning() && session.isConnected()){
 			try{
-				((Socket) session.getObj()).close();
+				((OutputStream) session.getObj()).close();
 			}catch(IOException e){
 				e.printStackTrace();
 				return false;

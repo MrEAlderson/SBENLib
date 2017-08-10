@@ -24,7 +24,6 @@ public class PacketData extends Packet {
 	
 	@Override
 	protected byte[] _encode(){
-		System.out.println(id);
 		this.writeStream.writeUnsignedShort(id);
 		this.writeStream.writeByte(priority);
 		this.writeStream.writeByte(data.getPacketID());

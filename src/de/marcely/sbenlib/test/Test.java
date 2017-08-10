@@ -15,7 +15,7 @@ import de.marcely.sbenlib.util.Util;
 public class Test {
 	
 	public static void main(String[] args){
-		final ConnectionInfo connInfo = new ConnectionInfo("192.168.178.59", 6234, ProtocolType.UDP, CompressionType.ZLib);
+		final ConnectionInfo connInfo = new ConnectionInfo("192.168.178.59", 6234, ProtocolType.TCP, CompressionType.ZLib);
 		final PacketsData packets = new PacketsData();
 		
 		// register packets
@@ -24,16 +24,18 @@ public class Test {
 		
 		// create server
 		SBENServer server = new SBENServer(connInfo, 1){
-			public void onSessionRequest(Session session){
+			public void onSessionRequest(final Session session){
 				session.registerListener(new SessionEventListener(){
 					public void onStateChange(ConnectionState state){
 						if(state == ConnectionState.Connected){
+							final TestNormalPacket packet = new TestNormalPacket();
 							
+							session.sendPacket(packet);
 						}
 					}
 					
 					public void onPacketReceive(DataPacket dataPacket){
-						
+						System.out.println("received packet as server");
 					}
 					
 					public void onDisconnect(String reason){
@@ -56,11 +58,11 @@ public class Test {
 			}
 
 			public void onPacketReceive(DataPacket packet){
-				
+				System.out.println("received packet as client");
 			}
 
 			public void onDisconnect(String reason){
-				System.out.println("reason");
+				System.out.println("client disconnected because: " + reason);
 			}
 		};
 		client.setPacketsData(packets);

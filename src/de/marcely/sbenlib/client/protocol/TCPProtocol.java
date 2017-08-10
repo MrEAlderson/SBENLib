@@ -86,7 +86,13 @@ public class TCPProtocol extends Protocol {
 				
 				return true;
 			}catch(IOException e){
-				e.printStackTrace();
+				final String msg = e.getMessage();
+				
+				if(msg != null && (msg.equals("Connection reset by peer: socket write error")))
+					close();
+				else
+					e.printStackTrace();
+				
 				return false;
 			}
 			
