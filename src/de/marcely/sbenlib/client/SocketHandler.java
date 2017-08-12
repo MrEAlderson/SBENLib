@@ -1,5 +1,6 @@
 package de.marcely.sbenlib.client;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -20,6 +21,7 @@ import de.marcely.sbenlib.network.packets.PacketLoginReply;
 import de.marcely.sbenlib.network.packets.PacketPing;
 import de.marcely.sbenlib.network.packets.PacketPong;
 import de.marcely.sbenlib.network.packets.data.DataPacket;
+import de.marcely.sbenlib.util.TickTimer;
 import de.marcely.sbenlib.util.Util;
 import lombok.Getter;
 
@@ -28,7 +30,12 @@ public class SocketHandler {
 	@Getter private final SBENServerConnection server;
 	@Getter private final Protocol protocol;
 	
+	private long lastReceivedPacket = System.currentTimeMillis();
+	
+	// packet handler
 	private ByteArraysCombiner combiner;
+	private List<byte[]> packetsQuery = new ArrayList<byte[]>();
+	private final TickTimer packetHandlerTimer;
 	
 	public SocketHandler(SBENServerConnection server){
 		this.server = server;
@@ -36,53 +43,7 @@ public class SocketHandler {
 		
 		this.protocol = server.getConnectionInfo().PROTOCOL.getClientInstance(server.getConnectionInfo(), this, new ServerEventListener(){
 			public void onPacketReceive(byte[] bytes){
-				final List<byte[]> packets = combiner.addBytes(bytes);
-				
-				for(byte[] rawPacket:packets){
-					// decode base64
-					rawPacket = Base64.decode(rawPacket);
-					
-					// work with packet
-					final byte id = rawPacket[0];
-					
-					switch(id){
-					case Packet.TYPE_LOGIN_REPLY:
-						
-						final PacketLoginReply packet_reply = new PacketLoginReply();
-						packet_reply.decode(rawPacket);
-						
-						workWithPacket(packet_reply);
-						
-						break;
-					
-					case Packet.TYPE_PONG:
-						
-						final PacketPong packet_pong = new PacketPong();
-						packet_pong.decode(rawPacket);
-						
-						workWithPacket(packet_pong);
-						
-						break;
-						
-					case Packet.TYPE_CLOSE:
-						
-						final PacketClose packet_close = new PacketClose();
-						packet_close.decode(rawPacket);
-						
-						workWithPacket(packet_close);
-						
-						break;
-						
-					case Packet.TYPE_DATA:
-						
-						final PacketData packet_data = new PacketData();
-						packet_data.packetsData = getServer().getPacketsData();
-						packet_data.decode(rawPacket);
-						
-						workWithPacket(packet_data);
-						break;
-					}
-				}
+				packetsQuery.add(bytes);
 			}
 
 			@Override
@@ -90,6 +51,72 @@ public class SocketHandler {
 				close();
 			}
 		});
+		
+		packetHandlerTimer = new TickTimer(100){
+			public void onRun(){
+				// timeout
+				if(System.currentTimeMillis() - 1000*6 > lastReceivedPacket)
+					close("SERVER_TIMEOUT");
+				
+				if(packetsQuery.size() == 0)
+					return;
+				
+				lastReceivedPacket = System.currentTimeMillis();
+				
+				final List<byte[]> bytes = new ArrayList<byte[]>(packetsQuery);
+				
+				for(byte[] rp:bytes){
+					
+					for(byte[] rawPacket:combiner.addBytes(rp)){
+						// decode base64
+						rawPacket = Base64.decode(rawPacket);
+						
+						// work with packet
+						final byte id = rawPacket[0];
+						
+						switch(id){
+						case Packet.TYPE_LOGIN_REPLY:
+							
+							final PacketLoginReply packet_reply = new PacketLoginReply();
+							packet_reply.decode(rawPacket);
+							
+							workWithPacket(packet_reply);
+							
+							break;
+						
+						case Packet.TYPE_PONG:
+							
+							final PacketPong packet_pong = new PacketPong();
+							packet_pong.decode(rawPacket);
+							
+							workWithPacket(packet_pong);
+							
+							break;
+							
+						case Packet.TYPE_CLOSE:
+							
+							final PacketClose packet_close = new PacketClose();
+							packet_close.decode(rawPacket);
+							
+							workWithPacket(packet_close);
+							
+							break;
+							
+						case Packet.TYPE_DATA:
+							
+							final PacketData packet_data = new PacketData();
+							packet_data.packetsData = getServer().getPacketsData();
+							packet_data.decode(rawPacket);
+							
+							workWithPacket(packet_data);
+							break;
+						}
+					}
+				}
+				
+				packetsQuery.removeAll(bytes);
+			}
+		};
 	}
 	
 	public boolean isRunning(){
@@ -104,6 +131,8 @@ public class SocketHandler {
 				this.getServer().setConnectionState(ConnectionState.Connecting);
 				
 				server.key = new SecretKeySpec(Util.generateRandomSecurityID(), "AES");
+				
+				packetHandlerTimer.start();
 				
 				// send login packet
 				final PacketLogin packet = new PacketLogin();
@@ -130,6 +159,8 @@ public class SocketHandler {
 	public boolean close(@Nullable String reason){
 		if(reason == null)
 			reason = "SOCKET_CLIENT_CLOSE";
+		
+		packetHandlerTimer.stop();
 		
 		if(isRunning()){
 			this.getServer().setConnectionState(ConnectionState.Disconnected);

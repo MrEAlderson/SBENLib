@@ -1,6 +1,7 @@
 package de.marcely.sbenlib.server;
 
 import java.net.InetAddress;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -18,6 +19,7 @@ import de.marcely.sbenlib.network.packets.PacketPing;
 import de.marcely.sbenlib.network.packets.PacketPong;
 import de.marcely.sbenlib.network.packets.data.DataPacket;
 import de.marcely.sbenlib.server.protocol.Protocol;
+import de.marcely.sbenlib.util.TickTimer;
 import lombok.Getter;
 
 public class SocketHandler {
@@ -26,7 +28,10 @@ public class SocketHandler {
 	@Getter private final Protocol protocol;
 	@Getter private final HashMap<String, Session> sessions = new HashMap<String, Session>();
 	
+	// packet handler
 	private ByteArraysCombiner combiner;
+	private List<RawPacket> packetsQuery = new ArrayList<RawPacket>();
+	private final TickTimer packetHandlerTimer;
 	
 	public SocketHandler(SBENServer server, int maxClients){
 		this.server = server;
@@ -46,45 +51,7 @@ public class SocketHandler {
 			}
 
 			public void onPacketReceive(Session session, byte[] data){
-				final List<byte[]> packets = combiner.addBytes(data);
-				
-				for(byte[] rawPacket:packets){
-					// decode base64
-					rawPacket = Base64.decode(rawPacket);
-					
-					// work with packet
-					final byte id = rawPacket[0];
-					
-					switch(id){
-					case Packet.TYPE_LOGIN:
-						
-						final PacketLogin packet_login = new PacketLogin();
-						packet_login.decode(rawPacket);
-						workWithPacket(session, packet_login);
-						
-						break;
-						
-					case Packet.TYPE_DATA:
-						
-						final PacketData packet_data = new PacketData();
-						packet_data.packetsData = getServer().getPacketsData();
-						packet_data.decode(rawPacket);
-						workWithPacket(session, packet_data);
-						
-						break;
-					case Packet.TYPE_ACK:
-						break;
-					case Packet.TYPE_NAK:
-						break;
-					case Packet.TYPE_PING:
-						
-						final PacketPing packet_ping = new PacketPing();
-						packet_ping.decode(rawPacket);
-						workWithPacket(session, packet_ping);
-						
-						break;
-					}
-				}
+				packetsQuery.add(new RawPacket(session, data));
 			}
 
 			public List<Session> getSessions(){
@@ -98,6 +65,69 @@ public class SocketHandler {
 			}
 			
 		}, maxClients);
+		
+		packetHandlerTimer = new TickTimer(100){
+			public void onRun(){
+				// timeout
+				for(Session s:sessions.values()){
+					if(System.currentTimeMillis() - 1000*5 > s.pingLastUpdate)
+						s.close("CLIENT_TIMEOUT");
+				}
+				
+				if(packetsQuery.size() == 0)
+					return;
+				
+				final List<RawPacket> rps = new ArrayList<RawPacket>(packetsQuery);
+				
+				for(RawPacket rp:rps){
+					final Session session = rp.session;
+					final byte[] data = rp.packet;
+					
+					final List<byte[]> packets = combiner.addBytes(data);
+					
+					for(byte[] rawPacket:packets){
+						// decode base64
+						rawPacket = Base64.decode(rawPacket);
+						
+						// work with packet
+						final byte id = rawPacket[0];
+						
+						switch(id){
+						case Packet.TYPE_LOGIN:
+							
+							final PacketLogin packet_login = new PacketLogin();
+							packet_login.decode(rawPacket);
+							workWithPacket(session, packet_login);
+							
+							break;
+							
+						case Packet.TYPE_DATA:
+							
+							final PacketData packet_data = new PacketData();
+							packet_data.packetsData = getServer().getPacketsData();
+							packet_data.decode(rawPacket);
+							workWithPacket(session, packet_data);
+							
+							break;
+						case Packet.TYPE_ACK:
+							break;
+						case Packet.TYPE_NAK:
+							break;
+						case Packet.TYPE_PING:
+							
+							final PacketPing packet_ping = new PacketPing();
+							packet_ping.decode(rawPacket);
+							workWithPacket(session, packet_ping);
+							
+							break;
+						}
+					}
+				}
+				
+				packetsQuery.removeAll(rps);
+			}
+		};
+		packetHandlerTimer.start();
 	}
 	
 	public boolean isRunning(){
@@ -115,6 +145,8 @@ public class SocketHandler {
 	public boolean close(){
 		for(Session session:sessions.values())
 			closeSession(session, "SERVER_CLOSED");
+		
+		packetHandlerTimer.stop();
 		
 		return protocol.close();
 	}
@@ -136,9 +168,10 @@ public class SocketHandler {
 		if(!session.isConnected())
 			return false;
 		
+		this.sessions.remove(session.getIdentifier());
+		
 		final boolean success = protocol.closeSession(session, reason);
 		
-		this.sessions.remove(session.getIdentifier());
 		for(SessionEventListener listener:session.getListeners())
 			listener.onDisconnect(reason);
 		
@@ -187,5 +220,18 @@ public class SocketHandler {
 		
 		for(SessionEventListener listener:session.getListeners())
 			listener.onPacketReceive(dataPacket);
+	}
+	
+	
+	
+	private static class RawPacket {
+		
+		public final Session session;
+		public final byte[] packet;
+		
+		public RawPacket(Session session, byte[] packet){
+			this.session = session;
+			this.packet = packet;
+		}
 	}
 }

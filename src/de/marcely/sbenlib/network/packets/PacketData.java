@@ -40,8 +40,15 @@ public class PacketData extends Packet {
 		this.id = this.readStream.readUnsignedShort();
 		this.priority = this.readStream.readByte();
 		
-		this.data = packetsData.getPacket(this.readStream.readByte());
-		this.data.setReadStream(this.readStream);
-		this.data.decode();
+		final byte packetId = this.readStream.readByte();
+		final DataPacket packet = packetsData.getPacket(packetId);
+		
+		if(packet != null){
+			this.data = packetsData.getPacket(packetId);
+			this.data.setReadStream(this.readStream);
+			this.data.decode();
+		
+		}else
+			this.data = null;
 	}
 }

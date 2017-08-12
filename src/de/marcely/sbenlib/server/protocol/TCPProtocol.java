@@ -5,6 +5,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import de.marcely.sbenlib.network.ConnectionInfo;
 import de.marcely.sbenlib.network.ProtocolType;
@@ -40,46 +42,47 @@ public class TCPProtocol extends Protocol {
 							try{
 								final Socket client = socket.accept();
 								
-								final Thread thread = new Thread(){
+								// packet updater
+								final Timer t = new Timer();
+								t.schedule(new TimerTask(){
 									public void run(){
+										// continue
 										final Session session = listener.getSession(client.getInetAddress(), client.getPort());
+										if(session == null)
+											return;
 										
 										try{
 											final InputStream inStream = client.getInputStream();
 											
-											while(running){
-												if(inStream.available() >= 1){
-													final byte[] packet = new byte[inStream.available()];
-													inStream.read(packet);
-													
-													listener.onPacketReceive(session, packet);
-												}
+											if(inStream.available() >= 1){
+												final byte[] packet = new byte[inStream.available()];
+												inStream.read(packet);
+												
+												listener.onPacketReceive(session, packet);
 											}
 										}catch(IOException e){
 											final String reason = e.getMessage();
 											
-											if(reason != null && (reason.equals("socket closed") || reason.equals("Stream closed.")))
-												return;
+											if(reason != null && (reason.equals("socket closed") || reason.equals("Stream closed.")) || reason.equals("Socket is closed")){
+												cancel();
+												session.close();
+											}
 											
 											e.printStackTrace();
 										}
 									}
-								};
+								}, 100, 100);
 								
-								final Session session = new Session(server, client.getInetAddress(), client.getPort(), thread, client.getOutputStream());
+								// register session
+								final Session session = new Session(server, client.getInetAddress(), client.getPort(), thread, client.getOutputStream(), t);
 								
 								listener.onClientRequest(session);
-								thread.start();
 								
 							}catch(IOException e){
 								final String reason = e.getMessage();
 								
-								if(reason != null){
-									if(reason.equals("socket closed")){
-										server.getSocketHandler().close();
-										return;
-									}
-								}
+								if(reason != null && (reason.equals("socket closed")))
+									return;
 								
 								e.printStackTrace();
 							}
@@ -103,8 +106,8 @@ public class TCPProtocol extends Protocol {
 		if(running){
 			
 			try{
-				this.socket.close();
 				this.running = false;
+				this.socket.close();
 			}catch(IOException e){
 				e.printStackTrace();
 				return false;
@@ -119,9 +122,16 @@ public class TCPProtocol extends Protocol {
 	protected boolean _sendPacket(Session session, byte[] packet){
 		if(running){
 			try{
-				((OutputStream) session.getObj()).write(packet);
+				((OutputStream) session.getObj()[0]).write(packet);
 			}catch(IOException e){
-				e.printStackTrace();
+				final String msg = e.getMessage();
+				
+				if(msg != null && (msg.equals("Connection reset by peer: socket write error"))){
+					this.server.close();
+					return false;
+				}else
+					e.printStackTrace();
+				
 				return false;
 			}
 			
@@ -134,7 +144,8 @@ public class TCPProtocol extends Protocol {
 	protected boolean _closeSession(Session session){
 		if(isRunning() && session.isConnected()){
 			try{
-				((OutputStream) session.getObj()).close();
+				((OutputStream) session.getObj()[0]).close();
+				((Timer) session.getObj()[1]).cancel();
 			}catch(IOException e){
 				e.printStackTrace();
 				return false;

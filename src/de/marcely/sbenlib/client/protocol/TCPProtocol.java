@@ -43,6 +43,11 @@ public class TCPProtocol extends Protocol {
 								}
 							}
 						}catch(IOException e){
+							final String msg = e.getMessage();
+							
+							if(msg != null && (msg.equals("Stream closed.")))
+								return;
+							
 							e.printStackTrace();
 						}
 					}
@@ -50,7 +55,13 @@ public class TCPProtocol extends Protocol {
 				this.thread.start();
 				
 			}catch(IOException e){
+				final String msg = e.getMessage();
+				
+				if(msg != null && (msg.equals("Connection refused: connect")))
+					return false;
+				
 				e.printStackTrace();
+				
 				return false;
 			}
 			

@@ -19,20 +19,20 @@ public class Session {
 	@Getter private final InetAddress address;
 	@Getter private final int port;
 	@Getter private final Thread thread;
-	@Getter private final Object obj;
+	@Getter private final Object[] obj;
 	
 	@Getter private ConnectionState connectionState = ConnectionState.NotStarted;
 	@Getter @Setter private long ping = 0;
 	@Getter @Setter private SecretKeySpec key;
 	
 	@Getter private List<SessionEventListener> listeners = new ArrayList<SessionEventListener>();
-	public long pingLastUpdate = 0;
+	public long pingLastUpdate = System.currentTimeMillis();
 	
 	public Session(SBENServer server, InetAddress address, int port){
-		this(server, address, port, null, null);
+		this(server, address, port, null, new Object[0]);
 	}
 	
-	public Session(SBENServer server, InetAddress address, int port, Thread thread, Object obj){
+	public Session(SBENServer server, InetAddress address, int port, Thread thread, Object... obj){
 		this.server = server;
 		this.address = address;
 		this.port = port;
