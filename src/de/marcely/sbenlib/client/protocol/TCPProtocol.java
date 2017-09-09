@@ -6,6 +6,8 @@ import java.net.Socket;
 
 import de.marcely.sbenlib.network.ConnectionInfo;
 import de.marcely.sbenlib.network.ProtocolType;
+import de.marcely.sbenlib.util.SThread;
+import de.marcely.sbenlib.util.SThread.ThreadType;
 import de.marcely.sbenlib.client.ServerEventListener;
 import de.marcely.sbenlib.client.SocketHandler;
 
@@ -29,8 +31,8 @@ public class TCPProtocol extends Protocol {
 			try{
 				socket = new Socket(connectionInfo.IP, connectionInfo.PORT);
 				
-				this.thread = new Thread(){
-					public void run(){
+				this.thread = new SThread(ThreadType.Protocol_TCP_Client){
+					protected void _run(){
 						try{
 							final InputStream inStream = socket.getInputStream();
 							
@@ -45,7 +47,7 @@ public class TCPProtocol extends Protocol {
 						}catch(IOException e){
 							final String msg = e.getMessage();
 							
-							if(msg != null && (msg.equals("Stream closed.")))
+							if(msg != null && (msg.equals("Stream closed.") || msg.equals("Socket operation on nonsocket: socket available")))
 								return;
 							
 							e.printStackTrace();
@@ -74,7 +76,6 @@ public class TCPProtocol extends Protocol {
 	@Override
 	public boolean close(){
 		if(running){
-			
 			try{
 				socket.close();
 				this.running = false;

@@ -2,7 +2,6 @@ package de.marcely.sbenlib.client;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Timer;
 
 import javax.annotation.Nullable;
 import javax.crypto.spec.SecretKeySpec;
@@ -11,6 +10,9 @@ import de.marcely.sbenlib.network.ConnectionInfo;
 import de.marcely.sbenlib.network.ConnectionState;
 import de.marcely.sbenlib.network.PacketsData;
 import de.marcely.sbenlib.network.packets.data.DataPacket;
+import de.marcely.sbenlib.util.SThread.ThreadType;
+import de.marcely.sbenlib.util.TickTimer;
+import de.marcely.sbenlib.util.SThread;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -23,7 +25,7 @@ public abstract class SBENServerConnection {
 	
 	@Getter private ConnectionState connectionState = ConnectionState.NotStarted;
 	@Getter @Setter private long ping = 0;
-	private final List<Timer> registredTimers = new ArrayList<Timer>();
+	private final List<TickTimer> registredTimers = new ArrayList<TickTimer>();
 	@Getter @Setter private PacketsData packetsData = new PacketsData();
 	@Getter public SecretKeySpec key = null;
 	
@@ -42,8 +44,8 @@ public abstract class SBENServerConnection {
 		final boolean result = this.socketHandler.run();
 		
 		if(addShutdownHook && result){
-			shutdownHook = new Thread(){
-				public void run(){
+			shutdownHook = new SThread(ThreadType.ShutdownHook_Client){
+				protected void _run(){
 					if(isRunning())
 						close("DISCONNECTED");
 				}
@@ -67,8 +69,8 @@ public abstract class SBENServerConnection {
 			return;
 		
 		if(state == ConnectionState.Disconnected){
-			for(Timer t:registredTimers)
-				t.cancel();
+			for(TickTimer t:registredTimers)
+				t.stop();
 			
 			registredTimers.clear();
 		}
@@ -77,11 +79,11 @@ public abstract class SBENServerConnection {
 		this.connectionState = state;
 	}
 	
-	public void registerTimer(Timer timer){
+	public void registerTimer(TickTimer timer){
 		this.registredTimers.add(timer);
 	}
 	
-	public void unregisterTimer(Timer timer){
+	public void unregisterTimer(TickTimer timer){
 		this.registredTimers.remove(timer);
 	}
 	

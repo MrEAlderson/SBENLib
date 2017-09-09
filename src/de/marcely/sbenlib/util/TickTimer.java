@@ -1,5 +1,7 @@
 package de.marcely.sbenlib.util;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -7,12 +9,21 @@ import lombok.Getter;
 
 public abstract class TickTimer {
 	
-	@Getter private final long delay;
+	@Getter private static final List<TickTimer> timers = new ArrayList<TickTimer>();
+	
+	@Getter private final boolean repeating;
+	@Getter private final long start, delay;
 	
 	private Timer timer;
 	
-	public TickTimer(long delay){
+	public TickTimer(boolean repeating, long delay){
+		this(repeating, delay, 0);
+	}
+	
+	public TickTimer(boolean repeating, long delay, long start){
+		this.repeating = repeating;
 		this.delay = delay;
+		this.start = start;
 	}
 	
 	public boolean isRunning(){
@@ -24,11 +35,20 @@ public abstract class TickTimer {
 			return false;
 		
 		timer = new Timer();
-		timer.schedule(new TimerTask(){
-			public void run(){
-				onRun();
-			}
-		}, 0, delay);
+		timers.add(this);
+		if(repeating){
+			timer.schedule(new TimerTask(){
+				public void run(){
+					onRun();
+				}
+			}, start, delay);
+		}else{
+			timer.schedule(new TimerTask(){
+				public void run(){
+					onRun();
+				}
+			}, delay);
+		}
 		
 		return true;
 	}
@@ -37,6 +57,7 @@ public abstract class TickTimer {
 		if(!isRunning())
 			return false;
 		
+		timers.remove(this);
 		timer.cancel();
 		timer = null;
 		

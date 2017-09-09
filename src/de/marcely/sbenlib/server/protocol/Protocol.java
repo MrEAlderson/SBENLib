@@ -9,6 +9,8 @@ import de.marcely.sbenlib.server.SBENServer;
 import de.marcely.sbenlib.server.ServerEventListener;
 import de.marcely.sbenlib.server.ServerStartInfo;
 import de.marcely.sbenlib.server.Session;
+import de.marcely.sbenlib.util.SThread;
+import de.marcely.sbenlib.util.TickTimer;
 import de.marcely.sbenlib.util.Util;
 import lombok.Getter;
 
@@ -19,7 +21,8 @@ public abstract class Protocol {
 	@Getter protected final ServerEventListener listener;
 	@Getter protected final int maxClients;
 	
-	@Getter protected Thread thread = null;
+	@Getter protected SThread thread = null; // TODO: Move to TickTimer
+	@Getter protected TickTimer tickTimer = null;
 	
 	@Getter protected boolean running = false;
 	
@@ -54,9 +57,11 @@ public abstract class Protocol {
 			packet_close.encode();
 			
 			sendPacket(session, packet_close);
+		
 			return _closeSession(session);
-		}else
-			return false;
+		}
+		
+		return false;
 	}
 	
 	

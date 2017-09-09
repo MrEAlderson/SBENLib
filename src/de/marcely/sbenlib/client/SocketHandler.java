@@ -2,8 +2,6 @@ package de.marcely.sbenlib.client;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
 
 import javax.annotation.Nullable;
 import javax.crypto.spec.SecretKeySpec;
@@ -52,7 +50,7 @@ public class SocketHandler {
 			}
 		});
 		
-		packetHandlerTimer = new TickTimer(100){
+		packetHandlerTimer = new TickTimer(true, 100){
 			public void onRun(){
 				// timeout
 				if(System.currentTimeMillis() - 1000*6 > lastReceivedPacket)
@@ -117,6 +115,7 @@ public class SocketHandler {
 				packetsQuery.removeAll(bytes);
 			}
 		};
+		packetHandlerTimer.start();
 	}
 	
 	public boolean isRunning(){
@@ -194,9 +193,8 @@ public class SocketHandler {
 			getServer().setConnectionState(ConnectionState.Connected);
 			
 			// register ping timer
-			final Timer timer_ping = new Timer();
-			timer_ping.schedule(new TimerTask(){
-				public void run(){
+			final TickTimer timer_ping = new TickTimer(true, Network.PING_UPDATE){
+				public void onRun(){
 					final PacketPing packet = new PacketPing();
 					
 					packet.time = System.currentTimeMillis();
@@ -204,7 +202,8 @@ public class SocketHandler {
 					packet.encode();
 					sendPacket(packet);
 				}
-			}, Network.PING_UPDATE, Network.PING_UPDATE);
+			};
+			timer_ping.start();
 			
 			getServer().registerTimer(timer_ping);
 			

@@ -66,18 +66,18 @@ public class SocketHandler {
 			
 		}, maxClients);
 		
-		packetHandlerTimer = new TickTimer(100){
+		packetHandlerTimer = new TickTimer(true, 100){
 			public void onRun(){
 				// timeout
-				for(Session s:sessions.values()){
-					if(System.currentTimeMillis() - 1000*5 > s.pingLastUpdate)
+				for(Session s:new ArrayList<Session>(sessions.values())){
+					if(System.currentTimeMillis() - 1000*10 > s.pingLastUpdate)
 						s.close("CLIENT_TIMEOUT");
 				}
 				
-				if(packetsQuery.size() == 0)
-					return;
-				
 				final List<RawPacket> rps = new ArrayList<RawPacket>(packetsQuery);
+				
+				if(rps.size() == 0)
+					return;
 				
 				for(RawPacket rp:rps){
 					final Session session = rp.session;
@@ -144,7 +144,7 @@ public class SocketHandler {
 	
 	public boolean close(){
 		for(Session session:sessions.values())
-			closeSession(session, "SERVER_CLOSED");
+			session.close("SERVER_CLOSED");
 		
 		packetHandlerTimer.stop();
 		
@@ -168,6 +168,7 @@ public class SocketHandler {
 		if(!session.isConnected())
 			return false;
 		
+		// remove from cache
 		this.sessions.remove(session.getIdentifier());
 		
 		final boolean success = protocol.closeSession(session, reason);
@@ -175,6 +176,7 @@ public class SocketHandler {
 		for(SessionEventListener listener:session.getListeners())
 			listener.onDisconnect(reason);
 		
+		// tell it the server
 		session.setConnectionState(ConnectionState.Disconnected);
 		
 		return success;

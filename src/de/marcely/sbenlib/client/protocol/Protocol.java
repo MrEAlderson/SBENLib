@@ -6,6 +6,7 @@ import de.marcely.sbenlib.compression.Base64;
 import de.marcely.sbenlib.network.ConnectionInfo;
 import de.marcely.sbenlib.network.ProtocolType;
 import de.marcely.sbenlib.network.packets.Packet;
+import de.marcely.sbenlib.util.SThread;
 import de.marcely.sbenlib.util.Util;
 import lombok.Getter;
 
@@ -15,7 +16,7 @@ public abstract class Protocol {
 	@Getter protected final SocketHandler socketHandler;
 	@Getter protected final ServerEventListener listener;
 	
-	@Getter protected Thread thread = null;
+	@Getter protected SThread thread = null;
 	
 	@Getter protected boolean running = false;
 	

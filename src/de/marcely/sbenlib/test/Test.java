@@ -72,5 +72,6 @@ public class Test {
 		
 		System.out.println("END");
 		server.close();
+		System.out.println("END1");
 	}
 }

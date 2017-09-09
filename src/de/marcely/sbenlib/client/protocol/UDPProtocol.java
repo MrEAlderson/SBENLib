@@ -10,6 +10,8 @@ import de.marcely.sbenlib.client.ServerEventListener;
 import de.marcely.sbenlib.client.SocketHandler;
 import de.marcely.sbenlib.network.ConnectionInfo;
 import de.marcely.sbenlib.network.ProtocolType;
+import de.marcely.sbenlib.util.SThread;
+import de.marcely.sbenlib.util.SThread.ThreadType;
 
 public class UDPProtocol extends Protocol {
 	
@@ -32,8 +34,8 @@ public class UDPProtocol extends Protocol {
 			try{
 				socket = new DatagramSocket();
 				
-				this.thread = new Thread(){
-					public void run(){
+				this.thread = new SThread(ThreadType.Protocol_UDP_Client){
+					protected void _run(){
 						while(running){
 							final DatagramPacket packet = new DatagramPacket(new byte[512], 512);
 							
