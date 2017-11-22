@@ -7,6 +7,7 @@ import java.util.TimerTask;
 
 import lombok.Getter;
 
+// TODO
 public abstract class TickTimer {
 	
 	@Getter private static final List<TickTimer> timers = new ArrayList<TickTimer>();

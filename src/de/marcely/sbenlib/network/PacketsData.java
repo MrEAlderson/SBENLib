@@ -1,6 +1,7 @@
 package de.marcely.sbenlib.network;
 
 import java.util.HashMap;
+import java.util.Map;
 
 import de.marcely.sbenlib.network.packets.data.DataPacket;
 import lombok.Getter;
@@ -8,7 +9,7 @@ import lombok.Setter;
 
 public class PacketsData {
 	
-	@Getter @Setter private HashMap<Byte, DataPacket> packets = new HashMap<Byte,  DataPacket>();
+	@Getter @Setter private Map<Byte, DataPacket> packets = new HashMap<>();
 	
 	public PacketsData(){ }
 	
