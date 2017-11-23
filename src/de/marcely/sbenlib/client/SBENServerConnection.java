@@ -8,6 +8,7 @@ import javax.crypto.spec.SecretKeySpec;
 
 import de.marcely.sbenlib.network.ConnectionInfo;
 import de.marcely.sbenlib.network.ConnectionState;
+import de.marcely.sbenlib.network.PacketPriority;
 import de.marcely.sbenlib.network.PacketsData;
 import de.marcely.sbenlib.network.packets.data.DataPacket;
 import de.marcely.sbenlib.util.SThread.ThreadType;
@@ -88,9 +89,12 @@ public abstract class SBENServerConnection {
 	}
 	
 	public void sendPacket(DataPacket packet){
-		this.socketHandler.sendPacket(packet);
+		sendPacket(packet, PacketPriority.NORMAL);
 	}
 	
+	public void sendPacket(DataPacket packet, PacketPriority priority){
+		this.socketHandler.sendPacket(packet, priority);
+	}
 	
 	public abstract void onStateChange(ConnectionState state);
 	

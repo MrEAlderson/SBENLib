@@ -4,6 +4,7 @@ import de.marcely.sbenlib.client.SBENServerConnection;
 import de.marcely.sbenlib.compression.CompressionType;
 import de.marcely.sbenlib.network.ConnectionInfo;
 import de.marcely.sbenlib.network.ConnectionState;
+import de.marcely.sbenlib.network.PacketPriority;
 import de.marcely.sbenlib.network.PacketsData;
 import de.marcely.sbenlib.network.ProtocolType;
 import de.marcely.sbenlib.network.packets.data.DataPacket;
@@ -15,7 +16,7 @@ import de.marcely.sbenlib.util.Util;
 public class Test {
 	
 	public static void main(String[] args){
-		final ConnectionInfo connInfo = new ConnectionInfo("192.168.178.59", 6234, ProtocolType.TCP, CompressionType.ZLib);
+		final ConnectionInfo connInfo = new ConnectionInfo("127.0.0.1", 6234, ProtocolType.UDP, CompressionType.ZLib);
 		final PacketsData packets = new PacketsData();
 		
 		// register packets
@@ -30,7 +31,7 @@ public class Test {
 						if(state == ConnectionState.Connected){
 							final TestNormalPacket packet = new TestNormalPacket();
 							
-							session.sendPacket(packet);
+							session.sendPacket(packet, PacketPriority.DONT_LOSE_AND_SORTED);
 						}
 					}
 					
@@ -53,7 +54,7 @@ public class Test {
 				if(state == ConnectionState.Connected){
 					final TestNormalPacket packet = new TestNormalPacket();
 					
-					sendPacket(packet);
+					sendPacket(packet, PacketPriority.DONT_LOSE_AND_SORTED);
 				}
 			}
 

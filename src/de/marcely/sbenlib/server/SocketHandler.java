@@ -8,10 +8,15 @@ import java.util.List;
 import javax.crypto.spec.SecretKeySpec;
 
 import de.marcely.sbenlib.compression.Base64;
+import de.marcely.sbenlib.exception.PacketDecodeException;
 import de.marcely.sbenlib.network.ByteArraysCombiner;
 import de.marcely.sbenlib.network.ConnectionState;
 import de.marcely.sbenlib.network.Network;
+import de.marcely.sbenlib.network.PacketDecoder;
+import de.marcely.sbenlib.network.PacketPriority;
+import de.marcely.sbenlib.network.PacketTransmitter;
 import de.marcely.sbenlib.network.packets.Packet;
+import de.marcely.sbenlib.network.packets.PacketAck;
 import de.marcely.sbenlib.network.packets.PacketData;
 import de.marcely.sbenlib.network.packets.PacketLogin;
 import de.marcely.sbenlib.network.packets.PacketLoginReply;
@@ -30,10 +35,11 @@ public class SocketHandler {
 	
 	// packet handler
 	private ByteArraysCombiner combiner;
+	private PacketTransmitter packetTransmitter;
 	private List<RawPacket> packetsQuery = new ArrayList<RawPacket>();
 	private final TickTimer packetHandlerTimer;
 	
-	public SocketHandler(SBENServer server, int maxClients){
+	public SocketHandler(final SBENServer server, int maxClients){
 		this.server = server;
 		combiner = new ByteArraysCombiner(Packet.SEPERATOR[0]);
 		
@@ -66,7 +72,8 @@ public class SocketHandler {
 			
 		}, maxClients);
 		
-		packetHandlerTimer = new TickTimer(true, 100){
+		// raw packet byte data to actual packet instance
+		this.packetHandlerTimer = new TickTimer(true, 100){
 			public void onRun(){
 				// timeout
 				for(Session s:new ArrayList<Session>(sessions.values())){
@@ -89,37 +96,10 @@ public class SocketHandler {
 						// decode base64
 						rawPacket = Base64.decode(rawPacket);
 						
-						// work with packet
-						final byte id = rawPacket[0];
-						
-						switch(id){
-						case Packet.TYPE_LOGIN:
-							
-							final PacketLogin packet_login = new PacketLogin();
-							packet_login.decode(rawPacket);
-							workWithPacket(session, packet_login);
-							
-							break;
-							
-						case Packet.TYPE_DATA:
-							
-							final PacketData packet_data = new PacketData();
-							packet_data.packetsData = getServer().getPacketsData();
-							packet_data.decode(rawPacket);
-							workWithPacket(session, packet_data);
-							
-							break;
-						case Packet.TYPE_ACK:
-							break;
-						case Packet.TYPE_NAK:
-							break;
-						case Packet.TYPE_PING:
-							
-							final PacketPing packet_ping = new PacketPing();
-							packet_ping.decode(rawPacket);
-							workWithPacket(session, packet_ping);
-							
-							break;
+						try{
+							packetTransmitter.onReceivePacket(PacketDecoder.decode(server.getPacketsData(), rawPacket), session);
+						}catch(Exception e){
+							new PacketDecodeException().printStackTrace();
 						}
 					}
 				}
@@ -127,7 +107,37 @@ public class SocketHandler {
 				packetsQuery.removeAll(rps);
 			}
 		};
-		packetHandlerTimer.start();
+		this.packetHandlerTimer.start();
+		
+		// create transmitter to add priority for packets
+		this.packetTransmitter = new PacketTransmitter(){
+			protected void send(Packet packet, Object[] data){
+				protocol.sendPacket((Session) data[0], packet);
+			}
+
+			public void receive(Packet packet, Object[] data){
+				final Session session = (Session) data[0];
+				
+				switch(packet.getType()){
+				case Packet.TYPE_LOGIN:
+					workWithPacket(session, (PacketLogin) packet);
+					break;
+					
+				case Packet.TYPE_DATA:
+					workWithPacket(session, (PacketData) packet);
+					break;
+					
+				case Packet.TYPE_PING:
+					workWithPacket(session, (PacketPing) packet);
+					break;
+					
+				case Packet.TYPE_ACK:
+					onReceiveAck((PacketAck) packet, false);
+					break;
+				}
+			}
+		};
+		this.packetTransmitter.run();
 	}
 	
 	public boolean isRunning(){
@@ -151,17 +161,13 @@ public class SocketHandler {
 		return protocol.close();
 	}
 	
-	public boolean sendPacket(Session session, DataPacket packet){
+	public boolean sendPacket(Session session, DataPacket packet, PacketPriority priority){
 		final PacketData packet_data = new PacketData();
 		packet_data.data = packet;
 		packet_data.packetsData = getServer().getPacketsData();
 		packet_data.encode();
 		
-		return sendPacket(session, packet_data);
-	}
-	
-	public boolean sendPacket(Session session, Packet packet){
-		return protocol.sendPacket(session, packet);
+		return this.packetTransmitter.addToSendQueue(packet_data, priority, session);
 	}
 	
 	public boolean closeSession(Session session, String reason){
@@ -201,7 +207,7 @@ public class SocketHandler {
 			packet_reply.reply = PacketLoginReply.REPLY_FAILED_PROTOCOL_OUTDATED_SERVER;
 		
 		packet_reply.encode();
-		session.sendPacket(packet_reply);
+		protocol.sendPacket(session, packet_reply);
 	}
 	
 	private void workWithPacket(Session session, PacketPing packet){
@@ -210,7 +216,7 @@ public class SocketHandler {
 		packet_pong.time = packet.time;
 		
 		packet_pong.encode();
-		session.sendPacket(packet_pong);
+		protocol.sendPacket(session, packet_pong);
 		
 		// get ping
 		session.setPing((packet.time - session.pingLastUpdate)-Network.PING_UPDATE);

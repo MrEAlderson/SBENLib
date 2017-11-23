@@ -11,7 +11,7 @@ public enum PacketPriority {
 	
 	NORMAL((byte) 0x0, false),
 	DONT_LOSE((byte) 0x1, true),
-	DONE_LOSE_AND_SORTED((byte) 0x2, true);
+	DONT_LOSE_AND_SORTED((byte) 0x2, true);
 	
 	private static Map<Byte, PacketPriority> VALUES = new HashMap<>();
 	

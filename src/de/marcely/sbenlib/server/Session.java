@@ -8,7 +8,7 @@ import javax.annotation.Nullable;
 import javax.crypto.spec.SecretKeySpec;
 
 import de.marcely.sbenlib.network.ConnectionState;
-import de.marcely.sbenlib.network.packets.Packet;
+import de.marcely.sbenlib.network.PacketPriority;
 import de.marcely.sbenlib.network.packets.data.DataPacket;
 import lombok.Getter;
 import lombok.Setter;
@@ -48,12 +48,12 @@ public class Session {
 		return address.getHostAddress() + ":" + port;
 	}
 	
-	public void sendPacket(Packet packet){
-		server.getSocketHandler().sendPacket(this, packet);
+	public void sendPacket(DataPacket packet){
+		sendPacket(packet, PacketPriority.NORMAL);
 	}
 	
-	public void sendPacket(DataPacket packet){
-		server.getSocketHandler().sendPacket(this, packet);
+	public void sendPacket(DataPacket packet, PacketPriority priority){
+		server.getSocketHandler().sendPacket(this, packet, priority);
 	}
 	
 	public void setConnectionState(ConnectionState state){

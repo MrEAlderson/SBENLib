@@ -6,12 +6,13 @@ public class QueuedPacket {
 	
 	public final Packet packet;
 	public final PacketPriority priority;
+	public final Object[] data;
 	
 	public long lastTimeSend = 0;
-	public boolean removeFromQueue = false;
 	
-	public QueuedPacket(Packet packet, PacketPriority priority){
+	public QueuedPacket(Packet packet, PacketPriority priority, Object[] data){
 		this.packet = packet;
 		this.priority = priority;
+		this.data = data;
 	}
 }

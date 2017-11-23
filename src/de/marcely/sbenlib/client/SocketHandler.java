@@ -11,7 +11,11 @@ import de.marcely.sbenlib.compression.Base64;
 import de.marcely.sbenlib.network.ByteArraysCombiner;
 import de.marcely.sbenlib.network.ConnectionState;
 import de.marcely.sbenlib.network.Network;
+import de.marcely.sbenlib.network.PacketDecoder;
+import de.marcely.sbenlib.network.PacketPriority;
+import de.marcely.sbenlib.network.PacketTransmitter;
 import de.marcely.sbenlib.network.packets.Packet;
+import de.marcely.sbenlib.network.packets.PacketAck;
 import de.marcely.sbenlib.network.packets.PacketClose;
 import de.marcely.sbenlib.network.packets.PacketData;
 import de.marcely.sbenlib.network.packets.PacketLogin;
@@ -32,10 +36,11 @@ public class SocketHandler {
 	
 	// packet handler
 	private ByteArraysCombiner combiner;
+	private PacketTransmitter packetTransmitter;
 	private List<byte[]> packetsQuery = new ArrayList<byte[]>();
 	private final TickTimer packetHandlerTimer;
 	
-	public SocketHandler(SBENServerConnection server){
+	public SocketHandler(final SBENServerConnection server){
 		this.server = server;
 		combiner = new ByteArraysCombiner(Packet.SEPERATOR[0]);
 		
@@ -50,7 +55,8 @@ public class SocketHandler {
 			}
 		});
 		
-		packetHandlerTimer = new TickTimer(true, 100){
+		// raw packet byte data to actual packet instance
+		this.packetHandlerTimer = new TickTimer(true, 100){
 			public void onRun(){
 				// timeout
 				if(System.currentTimeMillis() - 1000*6 > lastReceivedPacket)
@@ -69,45 +75,10 @@ public class SocketHandler {
 						// decode base64
 						rawPacket = Base64.decode(rawPacket);
 						
-						// work with packet
-						final byte id = rawPacket[0];
-						
-						switch(id){
-						case Packet.TYPE_LOGIN_REPLY:
-							
-							final PacketLoginReply packet_reply = new PacketLoginReply();
-							packet_reply.decode(rawPacket);
-							
-							workWithPacket(packet_reply);
-							
-							break;
-						
-						case Packet.TYPE_PONG:
-							
-							final PacketPong packet_pong = new PacketPong();
-							packet_pong.decode(rawPacket);
-							
-							workWithPacket(packet_pong);
-							
-							break;
-							
-						case Packet.TYPE_CLOSE:
-							
-							final PacketClose packet_close = new PacketClose();
-							packet_close.decode(rawPacket);
-							
-							workWithPacket(packet_close);
-							
-							break;
-							
-						case Packet.TYPE_DATA:
-							
-							final PacketData packet_data = new PacketData();
-							packet_data.packetsData = getServer().getPacketsData();
-							packet_data.decode(rawPacket);
-							
-							workWithPacket(packet_data);
-							break;
+						try{
+							packetTransmitter.onReceivePacket(PacketDecoder.decode(server.getPacketsData(), rawPacket));
+						}catch(Exception e){
+							e.printStackTrace();
 						}
 					}
 				}
@@ -115,7 +86,38 @@ public class SocketHandler {
 				packetsQuery.removeAll(bytes);
 			}
 		};
-		packetHandlerTimer.start();
+		this.packetHandlerTimer.start();
+		
+		// create transmitter to add priority for packets
+		this.packetTransmitter = new PacketTransmitter(){
+			protected void send(Packet packet, Object[] data){
+				protocol.sendPacket(packet);
+			}
+			
+			public void receive(Packet packet, Object[] data){
+				switch(packet.getType()){
+				case Packet.TYPE_LOGIN_REPLY:
+					workWithPacket((PacketLoginReply) packet);
+					break;
+					
+				case Packet.TYPE_PONG:
+					workWithPacket((PacketPong) packet);
+					break;
+					
+				case Packet.TYPE_CLOSE:
+					workWithPacket((PacketClose) packet);
+					break;
+					
+				case Packet.TYPE_DATA:
+					workWithPacket((PacketData) packet);
+					break;
+					
+				case Packet.TYPE_ACK:
+					onReceiveAck((PacketAck) packet, false);
+					break;
+				}
+			}
+		};
 	}
 	
 	public boolean isRunning(){
@@ -139,7 +141,7 @@ public class SocketHandler {
 				packet.version_protocol = Network.PROTOCOL_VERSION;
 				packet.encode();
 				
-				sendPacket(packet);
+				protocol.sendPacket(packet);
 				
 				return true;
 			}else{
@@ -170,17 +172,13 @@ public class SocketHandler {
 			return false;
 	}
 	
-	public boolean sendPacket(DataPacket packet){
+	public boolean sendPacket(DataPacket packet, PacketPriority priority){
 		final PacketData packet_data = new PacketData();
 		packet_data.data = packet;
 		packet_data.packetsData = getServer().getPacketsData();
 		packet_data.encode();
 		
-		return sendPacket(packet_data);
-	}
-	
-	public boolean sendPacket(Packet packet){
-		return protocol.sendPacket(packet);
+		return packetTransmitter.addToSendQueue(packet_data, priority);
 	}
 	
 	
@@ -200,7 +198,7 @@ public class SocketHandler {
 					packet.time = System.currentTimeMillis();
 					
 					packet.encode();
-					sendPacket(packet);
+					protocol.sendPacket(packet);
 				}
 			};
 			timer_ping.start();
