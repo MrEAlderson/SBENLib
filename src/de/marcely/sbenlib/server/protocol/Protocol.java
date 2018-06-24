@@ -1,6 +1,5 @@
 package de.marcely.sbenlib.server.protocol;
 
-import de.marcely.sbenlib.compression.Base64;
 import de.marcely.sbenlib.network.ConnectionInfo;
 import de.marcely.sbenlib.network.ProtocolType;
 import de.marcely.sbenlib.network.packets.Packet;
@@ -11,7 +10,6 @@ import de.marcely.sbenlib.server.ServerStartInfo;
 import de.marcely.sbenlib.server.Session;
 import de.marcely.sbenlib.util.SThread;
 import de.marcely.sbenlib.util.TickTimer;
-import de.marcely.sbenlib.util.Util;
 import lombok.Getter;
 
 public abstract class Protocol {
@@ -45,9 +43,7 @@ public abstract class Protocol {
 	}
 	
 	public boolean sendPacket(Session session, byte[] packet){
-		_sendPacket(session, Base64.encode(packet));
-		Util.sleep(10);
-		return _sendPacket(session, Packet.SEPERATOR);
+		return _sendPacket(session, packet);
 	}
 	
 	public boolean closeSession(Session session, String reason){

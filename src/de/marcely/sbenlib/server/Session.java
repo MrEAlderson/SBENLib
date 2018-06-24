@@ -8,7 +8,18 @@ import javax.annotation.Nullable;
 import javax.crypto.spec.SecretKeySpec;
 
 import de.marcely.sbenlib.network.ConnectionState;
+import de.marcely.sbenlib.network.Network;
 import de.marcely.sbenlib.network.PacketPriority;
+import de.marcely.sbenlib.network.PacketTransmitter;
+import de.marcely.sbenlib.network.ProtocolType;
+import de.marcely.sbenlib.network.packets.Packet;
+import de.marcely.sbenlib.network.packets.PacketAck;
+import de.marcely.sbenlib.network.packets.PacketData;
+import de.marcely.sbenlib.network.packets.PacketLogin;
+import de.marcely.sbenlib.network.packets.PacketLoginReply;
+import de.marcely.sbenlib.network.packets.PacketNack;
+import de.marcely.sbenlib.network.packets.PacketPing;
+import de.marcely.sbenlib.network.packets.PacketPong;
 import de.marcely.sbenlib.network.packets.data.DataPacket;
 import lombok.Getter;
 import lombok.Setter;
@@ -20,6 +31,7 @@ public class Session {
 	@Getter private final int port;
 	@Getter private final Thread thread;
 	@Getter private final Object[] obj;
+	@Getter private final PacketTransmitter transmitter;
 	
 	@Getter private ConnectionState connectionState = ConnectionState.NotStarted;
 	@Getter @Setter private long ping = 0;
@@ -32,12 +44,22 @@ public class Session {
 		this(server, address, port, null, new Object[0]);
 	}
 	
-	public Session(SBENServer server, InetAddress address, int port, Thread thread, Object... obj){
+	public Session(final SBENServer server, InetAddress address, int port, Thread thread, Object... obj){
 		this.server = server;
 		this.address = address;
 		this.port = port;
 		this.thread = thread;
 		this.obj = obj;
+		
+		this.transmitter = new PacketTransmitter(server.getPacketsData()){
+			protected void send(byte[] data){
+				server.getSocketHandler().getProtocol().sendPacket(Session.this, data);
+			}
+
+			public void receive(Packet packet){
+				Session.this.handlePacket(packet);
+			}
+		};
 	}
 	
 	public boolean hasThread(){
@@ -53,7 +75,14 @@ public class Session {
 	}
 	
 	public void sendPacket(DataPacket packet, PacketPriority priority){
-		server.getSocketHandler().sendPacket(this, packet, priority);
+		if(priority != PacketPriority.NORMAL && server.getSocketHandler().getProtocol().getType() == ProtocolType.TCP)
+			priority = PacketPriority.NORMAL;
+		
+		final PacketData packet_data = new PacketData();
+		packet_data.data = packet;
+		packet_data.packetsData = getServer().getPacketsData();
+		
+		this.transmitter.sendPacket(packet_data, priority);
 	}
 	
 	public void setConnectionState(ConnectionState state){
@@ -87,5 +116,76 @@ public class Session {
 	
 	public boolean isConnected(){
 		return server.getSocketHandler().getSessions().containsKey(getIdentifier());
+	}
+	
+	private void handlePacket(Packet packet){
+		switch(packet.getType()){
+		case Packet.TYPE_LOGIN:
+			handle((PacketLogin) packet);
+			break;
+			
+		case Packet.TYPE_DATA:
+			handle((PacketData) packet);
+			break;
+			
+		case Packet.TYPE_PING:
+			handle((PacketPing) packet);
+			break;
+			
+		case Packet.TYPE_ACK:
+			handle((PacketAck) packet);
+			break;
+			
+		case Packet.TYPE_NACK:
+			handle((PacketNack) packet);
+			break;
+		}
+	}
+	
+	private void handle(PacketLogin packet){
+		final PacketLoginReply packet_reply = new PacketLoginReply();
+		
+		if(packet.version_protocol == Network.PROTOCOL_VERSION){
+			packet_reply.reply = PacketLoginReply.REPLY_SUCCESS;
+			
+			server.onSessionRequest(this);
+			this.setKey(new SecretKeySpec(packet.security_id, "AES"));
+			this.setConnectionState(ConnectionState.Connected);
+			
+		}else if(packet.version_protocol < Network.PROTOCOL_VERSION)
+			packet_reply.reply = PacketLoginReply.REPLY_FAILED_PROTOCOL_OUTDATED_CLIENT;
+		else
+			packet_reply.reply = PacketLoginReply.REPLY_FAILED_PROTOCOL_OUTDATED_SERVER;
+		
+		packet_reply.encode();
+		transmitter.sendPacket(packet_reply, PacketPriority.NORMAL);
+	}
+	
+	private void handle(PacketPing packet){
+		final PacketPong packet_pong = new PacketPong();
+		
+		packet_pong.time = packet.time;
+		
+		packet_pong.encode();
+		transmitter.sendPacket(packet_pong, PacketPriority.NORMAL);
+		
+		// get ping
+		setPing((packet.time - pingLastUpdate)-Network.PING_UPDATE);
+		pingLastUpdate = packet.time;
+	}
+	
+	private void handle(PacketData packet){
+		final DataPacket dataPacket = packet.data;
+		
+		for(SessionEventListener listener:getListeners())
+			listener.onPacketReceive(dataPacket);
+	}
+	
+	private void handle(PacketAck packet){
+		
+	}
+	
+	private void handle(PacketNack packet){
+		
 	}
 }

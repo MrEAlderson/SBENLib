@@ -2,8 +2,8 @@ package de.marcely.sbenlib.network.packets.data;
 
 import javax.crypto.spec.SecretKeySpec;
 
+import de.marcely.sbenlib.client.SBENServerConnection;
 import de.marcely.sbenlib.compression.AES;
-import de.marcely.sbenlib.server.Session;
 
 public abstract class SecuredPacket extends NormalPacket {
 	
@@ -43,7 +43,7 @@ public abstract class SecuredPacket extends NormalPacket {
 		return AES.decrypt(bytes, key);
 	}
 	
-	public void setSession(Session session){
-		this.key = session.getKey();
+	public void setConnection(SBENServerConnection conn){
+		this.key = conn.getKey();
 	}
 }

@@ -7,19 +7,20 @@ import javax.annotation.Nullable;
 import javax.crypto.spec.SecretKeySpec;
 
 import de.marcely.sbenlib.client.protocol.Protocol;
-import de.marcely.sbenlib.compression.Base64;
 import de.marcely.sbenlib.network.ByteArraysCombiner;
 import de.marcely.sbenlib.network.ConnectionState;
 import de.marcely.sbenlib.network.Network;
 import de.marcely.sbenlib.network.PacketDecoder;
 import de.marcely.sbenlib.network.PacketPriority;
 import de.marcely.sbenlib.network.PacketTransmitter;
+import de.marcely.sbenlib.network.ProtocolType;
 import de.marcely.sbenlib.network.packets.Packet;
 import de.marcely.sbenlib.network.packets.PacketAck;
 import de.marcely.sbenlib.network.packets.PacketClose;
 import de.marcely.sbenlib.network.packets.PacketData;
 import de.marcely.sbenlib.network.packets.PacketLogin;
 import de.marcely.sbenlib.network.packets.PacketLoginReply;
+import de.marcely.sbenlib.network.packets.PacketNack;
 import de.marcely.sbenlib.network.packets.PacketPing;
 import de.marcely.sbenlib.network.packets.PacketPong;
 import de.marcely.sbenlib.network.packets.data.DataPacket;
@@ -72,11 +73,8 @@ public class SocketHandler {
 				for(byte[] rp:bytes){
 					
 					for(byte[] rawPacket:combiner.addBytes(rp)){
-						// decode base64
-						rawPacket = Base64.decode(rawPacket);
-						
 						try{
-							packetTransmitter.onReceivePacket(PacketDecoder.decode(server.getPacketsData(), rawPacket));
+							packetTransmitter.handlePacket(rawPacket);
 						}catch(Exception e){
 							e.printStackTrace();
 						}
@@ -89,33 +87,13 @@ public class SocketHandler {
 		this.packetHandlerTimer.start();
 		
 		// create transmitter to add priority for packets
-		this.packetTransmitter = new PacketTransmitter(){
-			protected void send(Packet packet, Object[] data){
-				protocol.sendPacket(packet);
+		this.packetTransmitter = new PacketTransmitter(server.getPacketsData()){
+			protected void send(byte[] data){
+				protocol.sendPacket(data);
 			}
 			
-			public void receive(Packet packet, Object[] data){
-				switch(packet.getType()){
-				case Packet.TYPE_LOGIN_REPLY:
-					workWithPacket((PacketLoginReply) packet);
-					break;
-					
-				case Packet.TYPE_PONG:
-					workWithPacket((PacketPong) packet);
-					break;
-					
-				case Packet.TYPE_CLOSE:
-					workWithPacket((PacketClose) packet);
-					break;
-					
-				case Packet.TYPE_DATA:
-					workWithPacket((PacketData) packet);
-					break;
-					
-				case Packet.TYPE_ACK:
-					onReceiveAck((PacketAck) packet, false);
-					break;
-				}
+			public void receive(Packet packet){
+				SocketHandler.this.handlePacket(packet);
 			}
 		};
 	}
@@ -173,19 +151,47 @@ public class SocketHandler {
 	}
 	
 	public boolean sendPacket(DataPacket packet, PacketPriority priority){
+		if(priority != PacketPriority.NORMAL && getProtocol().getType() == ProtocolType.TCP)
+			priority = PacketPriority.NORMAL;
+		
 		final PacketData packet_data = new PacketData();
 		packet_data.data = packet;
 		packet_data.packetsData = getServer().getPacketsData();
-		packet_data.encode();
 		
-		return packetTransmitter.addToSendQueue(packet_data, priority);
+		return packetTransmitter.sendPacket(packet_data, priority);
 	}
 	
 	
 	
+	private void handlePacket(Packet packet){
+		switch(packet.getType()){
+		case Packet.TYPE_LOGIN_REPLY:
+			handle((PacketLoginReply) packet);
+			break;
+			
+		case Packet.TYPE_PONG:
+			handle((PacketPong) packet);
+			break;
+			
+		case Packet.TYPE_CLOSE:
+			handle((PacketClose) packet);
+			break;
+			
+		case Packet.TYPE_DATA:
+			handle((PacketData) packet);
+			break;
+			
+		case Packet.TYPE_ACK:
+			handle((PacketAck) packet);
+			break;
+			
+		case Packet.TYPE_NACK:
+			handle((PacketNack) packet);
+			break;
+		}
+	}
 	
-	
-	private void workWithPacket(PacketLoginReply packet){
+	private void handle(PacketLoginReply packet){
 		switch(packet.reply){
 		case PacketLoginReply.REPLY_SUCCESS:
 			getServer().setConnectionState(ConnectionState.Connected);
@@ -208,32 +214,40 @@ public class SocketHandler {
 			break;
 		case PacketLoginReply.REPLY_FAILED_PROTOCOL_OUTDATED_CLIENT:
 			getServer().setConnectionState(ConnectionState.Disconnected);
-			getServer().onDisconnect("LOGIN_PROTOCOL_OUTDATED_CLIENT");
+			close("LOGIN_PROTOCOL_OUTDATED_CLIENT");
 			break;
 		case PacketLoginReply.REPLY_FAILED_PROTOCOL_OUTDATED_SERVER:
 			getServer().setConnectionState(ConnectionState.Disconnected);
-			getServer().onDisconnect("LOGIN_PROTOCOL_OUTDATED_SERVER");
+			close("LOGIN_PROTOCOL_OUTDATED_SERVER");
 			break;
 		case PacketLoginReply.REPLY_FAILED_UNKOWN:
 			getServer().setConnectionState(ConnectionState.Disconnected);
-			getServer().onDisconnect("LOGIN_UNKOWN");
+			close("LOGIN_UNKOWN");
 			break;
 		}
 	}
 	
-	private void workWithPacket(PacketPong packet){
+	private void handle(PacketPong packet){
 		final long delay = System.currentTimeMillis() - packet.time;
 		
 		getServer().setPing(delay);
 	}
 	
-	private void workWithPacket(PacketClose packet){
+	private void handle(PacketClose packet){
 		close(packet.reason);
 	}
 	
-	private void workWithPacket(PacketData packet){
+	private void handle(PacketData packet){
 		final DataPacket dataPacket = packet.data;
 		
 		getServer().onPacketReceive(dataPacket);
+	}
+	
+	private void handle(PacketAck packet){
+		this.packetTransmitter.receiveAck(packet.window);
+	}
+	
+	private void handle(PacketNack packet){
+		this.packetTransmitter.receiveNack(packet.window);
 	}
 }

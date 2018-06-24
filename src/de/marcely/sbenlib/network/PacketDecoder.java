@@ -7,6 +7,7 @@ import de.marcely.sbenlib.network.packets.PacketAck;
 import de.marcely.sbenlib.network.packets.PacketData;
 import de.marcely.sbenlib.network.packets.PacketLogin;
 import de.marcely.sbenlib.network.packets.PacketLoginReply;
+import de.marcely.sbenlib.network.packets.PacketNack;
 import de.marcely.sbenlib.network.packets.PacketPing;
 import de.marcely.sbenlib.network.packets.PacketPong;
 
@@ -14,7 +15,7 @@ public class PacketDecoder {
 	
 	public static @Nullable Packet decode(PacketsData packetsData, byte[] data) throws Exception {
 		try{
-			final byte id = Packet.getTypeOfHeader1(data[0]);
+			final byte id = Packet.getTypeOfHeader(data[0]);
 			
 			switch(id){
 			case Packet.TYPE_LOGIN:
@@ -42,8 +43,12 @@ public class PacketDecoder {
 				packet_ack.decode(data);
 				
 				return packet_ack;
-			case Packet.TYPE_NAK:
-				break;
+			case Packet.TYPE_NACK:
+				
+				final PacketNack packet_nack = new PacketNack();
+				packet_nack.decode(data);
+				
+				return packet_nack;
 			case Packet.TYPE_PING:
 				
 				final PacketPing packet_ping = new PacketPing();

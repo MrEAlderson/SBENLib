@@ -11,6 +11,7 @@ import de.marcely.sbenlib.network.ConnectionState;
 import de.marcely.sbenlib.network.PacketPriority;
 import de.marcely.sbenlib.network.PacketsData;
 import de.marcely.sbenlib.network.packets.data.DataPacket;
+import de.marcely.sbenlib.network.packets.data.SecuredPacket;
 import de.marcely.sbenlib.util.SThread.ThreadType;
 import de.marcely.sbenlib.util.TickTimer;
 import de.marcely.sbenlib.util.SThread;
@@ -93,6 +94,9 @@ public abstract class SBENServerConnection {
 	}
 	
 	public void sendPacket(DataPacket packet, PacketPriority priority){
+		if(packet instanceof SecuredPacket)
+			((SecuredPacket) packet).setConnection(this);
+		
 		this.socketHandler.sendPacket(packet, priority);
 	}
 	

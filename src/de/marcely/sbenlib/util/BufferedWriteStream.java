@@ -6,6 +6,14 @@ import java.nio.ByteBuffer;
 
 public class BufferedWriteStream extends ByteArrayOutputStream {
 	
+	public BufferedWriteStream(){
+		super();
+	}
+	
+	public BufferedWriteStream(int allocate){
+		super(allocate);
+	}
+	
 	@Override
 	public void write(byte[] array){
 		try{
@@ -20,6 +28,10 @@ public class BufferedWriteStream extends ByteArrayOutputStream {
 		array[0] = b;
 		
 		write(array);
+	}
+	
+	public void writeUnsignedByte(int b){
+		writeByte((byte) (b & 0xFF));
 	}
 	
 	public void writeByteArray(byte[] b){
@@ -43,11 +55,11 @@ public class BufferedWriteStream extends ByteArrayOutputStream {
 		writeSignedShort((short) (s & 0x00FF));
 	}
 	
-	public void writeSignedFloat(float f){
+	public void writeFloat(float f){
 		write(ByteBuffer.allocate(4).putFloat(f).array());
 	}
 	
-	public void writeSignedDouble(double d){
+	public void writeDouble(double d){
 		write(ByteBuffer.allocate(8).putDouble(d).array());
 	}
 	

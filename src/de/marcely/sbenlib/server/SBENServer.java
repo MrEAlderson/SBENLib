@@ -13,7 +13,7 @@ public abstract class SBENServer {
 	
 	public SBENServer(ConnectionInfo connInfo, int maxClients){
 		this.connectionInfo = connInfo;
-		this.socketHandler = new SocketHandler(this, 0);
+		this.socketHandler = new SocketHandler(this, maxClients);
 	}
 	
 	public boolean isRunning(){
