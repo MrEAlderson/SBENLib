@@ -1,14 +1,14 @@
 package de.marcely.sbenlib.server;
 
 import java.net.InetAddress;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Queue;
 
 import de.marcely.sbenlib.exception.PacketDecodeException;
-import de.marcely.sbenlib.network.ByteArraysCombiner;
 import de.marcely.sbenlib.network.ConnectionState;
-import de.marcely.sbenlib.network.packets.Packet;
 import de.marcely.sbenlib.server.protocol.Protocol;
 import de.marcely.sbenlib.util.TickTimer;
 import lombok.Getter;
@@ -20,13 +20,11 @@ public class SocketHandler {
 	@Getter private final HashMap<String, Session> sessions = new HashMap<String, Session>();
 	
 	// packet handler
-	private ByteArraysCombiner combiner;
-	private List<RawPacket> packetsQuery = new ArrayList<RawPacket>();
+	private Queue<RawPacket> packetsQueue = new ArrayDeque<RawPacket>();
 	private final TickTimer packetHandlerTimer;
 	
 	public SocketHandler(final SBENServer server, int maxClients){
 		this.server = server;
-		combiner = new ByteArraysCombiner(Packet.SEPERATOR[0]);
 		
 		this.protocol = server.getConnectionInfo().PROTOCOL.getServerInstance(server.getConnectionInfo(), server, new ServerEventListener(){
 			public void onClientRequest(Session session){
@@ -42,7 +40,7 @@ public class SocketHandler {
 			}
 
 			public void onPacketReceive(Session session, byte[] data){
-				packetsQuery.add(new RawPacket(session, data));
+				packetsQueue.add(new RawPacket(session, data));
 			}
 
 			public List<Session> getSessions(){
@@ -66,27 +64,15 @@ public class SocketHandler {
 						s.close("CLIENT_TIMEOUT");
 				}
 				
-				final List<RawPacket> rps = new ArrayList<RawPacket>(packetsQuery);
+				RawPacket packet = null;
 				
-				if(rps.size() == 0)
-					return;
-				
-				for(RawPacket rp:rps){
-					final Session session = rp.session;
-					final byte[] data = rp.packet;
-					
-					final List<byte[]> packets = combiner.addBytes(data);
-					
-					for(byte[] rawPacket:packets){
-						try{
-							session.getTransmitter().handlePacket(rawPacket);
-						}catch(Exception e){
-							new PacketDecodeException().printStackTrace();
-						}
+				while((packet = packetsQueue.poll()) != null){
+					try{
+						packet.session.getTransmitter().handlePacket(packet.packet);
+					}catch(Exception e){
+						new PacketDecodeException().printStackTrace();
 					}
 				}
-				
-				packetsQuery.removeAll(rps);
 			}
 		};
 		this.packetHandlerTimer.start();

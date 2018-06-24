@@ -1,16 +1,14 @@
 package de.marcely.sbenlib.client;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.ArrayDeque;
+import java.util.Queue;
 
 import javax.annotation.Nullable;
 import javax.crypto.spec.SecretKeySpec;
 
 import de.marcely.sbenlib.client.protocol.Protocol;
-import de.marcely.sbenlib.network.ByteArraysCombiner;
 import de.marcely.sbenlib.network.ConnectionState;
 import de.marcely.sbenlib.network.Network;
-import de.marcely.sbenlib.network.PacketDecoder;
 import de.marcely.sbenlib.network.PacketPriority;
 import de.marcely.sbenlib.network.PacketTransmitter;
 import de.marcely.sbenlib.network.ProtocolType;
@@ -36,18 +34,16 @@ public class SocketHandler {
 	private long lastReceivedPacket = System.currentTimeMillis();
 	
 	// packet handler
-	private ByteArraysCombiner combiner;
 	private PacketTransmitter packetTransmitter;
-	private List<byte[]> packetsQuery = new ArrayList<byte[]>();
+	private Queue<byte[]> packetsQueue = new ArrayDeque<byte[]>();
 	private final TickTimer packetHandlerTimer;
 	
 	public SocketHandler(final SBENServerConnection server){
 		this.server = server;
-		combiner = new ByteArraysCombiner(Packet.SEPERATOR[0]);
 		
 		this.protocol = server.getConnectionInfo().PROTOCOL.getClientInstance(server.getConnectionInfo(), this, new ServerEventListener(){
-			public void onPacketReceive(byte[] bytes){
-				packetsQuery.add(bytes);
+			public void onPacketReceive(byte[] data){
+				packetsQueue.add(data);
 			}
 
 			@Override
@@ -63,25 +59,20 @@ public class SocketHandler {
 				if(System.currentTimeMillis() - 1000*6 > lastReceivedPacket)
 					close("SERVER_TIMEOUT");
 				
-				if(packetsQuery.size() == 0)
+				if(packetsQueue.size() == 0)
 					return;
 				
 				lastReceivedPacket = System.currentTimeMillis();
 				
-				final List<byte[]> bytes = new ArrayList<byte[]>(packetsQuery);
+				byte[] data = null;
 				
-				for(byte[] rp:bytes){
-					
-					for(byte[] rawPacket:combiner.addBytes(rp)){
-						try{
-							packetTransmitter.handlePacket(rawPacket);
-						}catch(Exception e){
-							e.printStackTrace();
-						}
+				while((data = packetsQueue.poll()) != null){
+					try{
+						packetTransmitter.handlePacket(data);
+					}catch(Exception e){
+						e.printStackTrace();
 					}
 				}
-				
-				packetsQuery.removeAll(bytes);
 			}
 		};
 		this.packetHandlerTimer.start();
