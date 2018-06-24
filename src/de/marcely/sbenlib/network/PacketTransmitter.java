@@ -13,7 +13,7 @@ import de.marcely.sbenlib.util.BufferedWriteStream;
 public abstract class PacketTransmitter {
 	
 	private static final int PACKET_PART_SIZE = 512;
-	private static final byte MAX_WINDOWS = (byte) 128;
+	private static final int MAX_WINDOWS = 128;
 	
 	private final PacketsData packets;
 	private byte currentSendWindow = 0, currentReceiveWindow = 0;
@@ -27,7 +27,7 @@ public abstract class PacketTransmitter {
 		final byte[] totalBuffer = packet.encode();
 		int parts = totalBuffer.length/PACKET_PART_SIZE;
 		
-		if(parts%PACKET_PART_SIZE != 0) parts++;
+		if(totalBuffer.length%PACKET_PART_SIZE != 0) parts++;
 		
 		if(parts + notAckedSendPackets.size() >= MAX_WINDOWS){
 			new OutOfMemoryError("Out of available windows").printStackTrace();
@@ -37,8 +37,10 @@ public abstract class PacketTransmitter {
 		final BufferedWriteStream stream = new BufferedWriteStream(PACKET_PART_SIZE+1);
 		
 		for(int i=0; i<parts; i++){
-			stream.write(currentSendWindow | (i+1 == parts ? 1 : 0 << 7));
-			stream.write(totalBuffer, i*PACKET_PART_SIZE, PACKET_PART_SIZE);
+			final int remaining = totalBuffer.length-i*PACKET_PART_SIZE;
+			
+			stream.write(currentSendWindow | (i+1 == parts ? 1 : 0) << 7);
+			stream.write(totalBuffer, i*PACKET_PART_SIZE, remaining > PACKET_PART_SIZE ? PACKET_PART_SIZE : remaining);
 			
 			final byte[] buffer = stream.toByteArray();
 			
