@@ -57,8 +57,6 @@ public abstract class PacketTransmitter {
 		for(int i=0; i<parts; i++){
 			final int remaining = totalBuffer.length-i*PACKET_PART_SIZE;
 			
-			System.out.println(i+1 + " " + parts);
-			
 			stream.write(currentSendWindow | (i+1 == parts ? 1 : 0) << 7);
 			stream.write(totalBuffer, i*PACKET_PART_SIZE, remaining > PACKET_PART_SIZE ? PACKET_PART_SIZE : remaining);
 			
