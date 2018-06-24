@@ -50,15 +50,14 @@ final boolean success = server.run();
 ```
 
 # State
-This library is currently in a very early stage.<br />
-You are already able to receive and send packets, but a stable and secure connectivity is not quaranteed.
+This library is currently fully working, but a 100% functionality is not guaranteed.
 
 # Requirements
 - Lombok
 - Java 7 or higher
 
 # Copyright
-(c) 2017 Marcely.de
+(c) 2018 Marcely.de
 
 # License
 BSD-3-Clause
