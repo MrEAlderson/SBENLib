@@ -9,7 +9,6 @@ import javax.crypto.spec.SecretKeySpec;
 import de.marcely.sbenlib.client.protocol.Protocol;
 import de.marcely.sbenlib.network.ConnectionState;
 import de.marcely.sbenlib.network.Network;
-import de.marcely.sbenlib.network.PacketPriority;
 import de.marcely.sbenlib.network.PacketTransmitter;
 import de.marcely.sbenlib.network.ProtocolType;
 import de.marcely.sbenlib.network.packets.Packet;
@@ -110,7 +109,7 @@ public class SocketHandler {
 				packet.version_protocol = Network.PROTOCOL_VERSION;
 				packet.encode();
 				
-				protocol.sendPacket(packet);
+				packetTransmitter.sendPacket(packet, false);
 				
 				return true;
 			}else{
@@ -141,15 +140,15 @@ public class SocketHandler {
 			return false;
 	}
 	
-	public boolean sendPacket(DataPacket packet, PacketPriority priority){
-		if(priority != PacketPriority.NORMAL && getProtocol().getType() == ProtocolType.TCP)
-			priority = PacketPriority.NORMAL;
+	public boolean sendPacket(DataPacket packet, boolean needACK){
+		if(needACK && getProtocol().getType() == ProtocolType.TCP)
+			needACK = false;
 		
 		final PacketData packet_data = new PacketData();
 		packet_data.data = packet;
 		packet_data.packetsData = getServer().getPacketsData();
 		
-		return packetTransmitter.sendPacket(packet_data, priority);
+		return packetTransmitter.sendPacket(packet_data, needACK);
 	}
 	
 	
@@ -195,7 +194,7 @@ public class SocketHandler {
 					packet.time = System.currentTimeMillis();
 					
 					packet.encode();
-					protocol.sendPacket(packet);
+					packetTransmitter.sendPacket(packet, false);
 				}
 			};
 			timer_ping.start();
@@ -235,10 +234,12 @@ public class SocketHandler {
 	}
 	
 	private void handle(PacketAck packet){
-		this.packetTransmitter.receiveAck(packet.window);
+		for(byte window:packet.windows)
+			this.packetTransmitter.receiveNack(window);
 	}
 	
 	private void handle(PacketNack packet){
-		this.packetTransmitter.receiveNack(packet.window);
+		for(byte window:packet.windows)
+			this.packetTransmitter.receiveNack(window);
 	}
 }

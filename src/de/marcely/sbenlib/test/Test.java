@@ -4,7 +4,6 @@ import de.marcely.sbenlib.client.SBENServerConnection;
 import de.marcely.sbenlib.compression.CompressionType;
 import de.marcely.sbenlib.network.ConnectionInfo;
 import de.marcely.sbenlib.network.ConnectionState;
-import de.marcely.sbenlib.network.PacketPriority;
 import de.marcely.sbenlib.network.PacketsData;
 import de.marcely.sbenlib.network.ProtocolType;
 import de.marcely.sbenlib.network.packets.data.DataPacket;
@@ -31,7 +30,7 @@ public class Test {
 						if(state == ConnectionState.Connected){
 							final TestNormalPacket packet = new TestNormalPacket();
 							
-							session.sendPacket(packet, PacketPriority.DONT_LOSE_AND_SORTED);
+							session.sendPacket(packet, true);
 						}
 					}
 					
@@ -54,7 +53,7 @@ public class Test {
 				if(state == ConnectionState.Connected){
 					final TestNormalPacket packet = new TestNormalPacket();
 					
-					sendPacket(packet, PacketPriority.DONT_LOSE_AND_SORTED);
+					sendPacket(packet, true);
 				}
 			}
 

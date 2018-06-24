@@ -9,7 +9,6 @@ import javax.crypto.spec.SecretKeySpec;
 
 import de.marcely.sbenlib.network.ConnectionState;
 import de.marcely.sbenlib.network.Network;
-import de.marcely.sbenlib.network.PacketPriority;
 import de.marcely.sbenlib.network.PacketTransmitter;
 import de.marcely.sbenlib.network.ProtocolType;
 import de.marcely.sbenlib.network.packets.Packet;
@@ -71,18 +70,18 @@ public class Session {
 	}
 	
 	public void sendPacket(DataPacket packet){
-		sendPacket(packet, PacketPriority.NORMAL);
+		sendPacket(packet, true);
 	}
 	
-	public void sendPacket(DataPacket packet, PacketPriority priority){
-		if(priority != PacketPriority.NORMAL && server.getSocketHandler().getProtocol().getType() == ProtocolType.TCP)
-			priority = PacketPriority.NORMAL;
+	public void sendPacket(DataPacket packet, boolean needACK){
+		if(needACK && server.getSocketHandler().getProtocol().getType() == ProtocolType.TCP)
+			needACK = true;
 		
 		final PacketData packet_data = new PacketData();
 		packet_data.data = packet;
 		packet_data.packetsData = getServer().getPacketsData();
 		
-		this.transmitter.sendPacket(packet_data, priority);
+		this.transmitter.sendPacket(packet_data, needACK);
 	}
 	
 	public void setConnectionState(ConnectionState state){
@@ -158,16 +157,18 @@ public class Session {
 			packet_reply.reply = PacketLoginReply.REPLY_FAILED_PROTOCOL_OUTDATED_SERVER;
 		
 		packet_reply.encode();
-		transmitter.sendPacket(packet_reply, PacketPriority.NORMAL);
+		transmitter.sendPacket(packet_reply, true);
 	}
 	
 	private void handle(PacketPing packet){
+		if(packet.time == 0) return;
+		
 		final PacketPong packet_pong = new PacketPong();
 		
 		packet_pong.time = packet.time;
 		
 		packet_pong.encode();
-		transmitter.sendPacket(packet_pong, PacketPriority.NORMAL);
+		transmitter.sendPacket(packet_pong, false);
 		
 		// get ping
 		setPing((packet.time - pingLastUpdate)-Network.PING_UPDATE);
@@ -182,10 +183,12 @@ public class Session {
 	}
 	
 	private void handle(PacketAck packet){
-		
+		for(byte window:packet.windows)
+			this.transmitter.receiveNack(window);
 	}
 	
 	private void handle(PacketNack packet){
-		
+		for(byte window:packet.windows)
+			this.transmitter.receiveNack(window);
 	}
 }

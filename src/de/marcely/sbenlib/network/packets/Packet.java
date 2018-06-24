@@ -14,17 +14,11 @@ public abstract class Packet {
 	public static final byte TYPE_ACK = (byte) 0x5;
 	public static final byte TYPE_NACK = (byte) 0x6;
 	public static final byte TYPE_CLOSE = (byte) 0x7; // max is 0x7
-	public static final byte[] SEPERATOR;
 	
 	@Getter protected BufferedWriteStream writeStream;
 	@Getter protected BufferedReadStream readStream;
 	
 	public boolean _needAck = false;
-	
-	static {
-		SEPERATOR = new byte[1];
-		SEPERATOR[0] = (byte) 0x0;
-	}
 	
 	public byte[] encode(){
 		this.writeStream = new BufferedWriteStream();
