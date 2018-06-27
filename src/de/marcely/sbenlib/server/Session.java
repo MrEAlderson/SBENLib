@@ -20,6 +20,7 @@ import de.marcely.sbenlib.network.packets.PacketNack;
 import de.marcely.sbenlib.network.packets.PacketPing;
 import de.marcely.sbenlib.network.packets.PacketPong;
 import de.marcely.sbenlib.network.packets.data.DataPacket;
+import de.marcely.sbenlib.network.packets.data.SecuredPacket;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -76,6 +77,9 @@ public class Session {
 	public void sendPacket(DataPacket packet, boolean needACK){
 		if(needACK && server.getSocketHandler().getProtocol().getType() == ProtocolType.TCP)
 			needACK = true;
+		
+		if(packet instanceof SecuredPacket)
+			((SecuredPacket) packet).set_key(this.key);
 		
 		final PacketData packet_data = new PacketData();
 		packet_data.data = packet;
@@ -149,6 +153,7 @@ public class Session {
 			
 			server.onSessionRequest(this);
 			this.setKey(new SecretKeySpec(packet.security_id, "AES"));
+			this.transmitter.setKey(this.key);
 			this.setConnectionState(ConnectionState.Connected);
 			
 		}else if(packet.version_protocol < Network.PROTOCOL_VERSION)

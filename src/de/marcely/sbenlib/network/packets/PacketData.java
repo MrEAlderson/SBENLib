@@ -1,13 +1,17 @@
 package de.marcely.sbenlib.network.packets;
 
+import javax.crypto.spec.SecretKeySpec;
+
 import de.marcely.sbenlib.network.PacketsData;
 import de.marcely.sbenlib.network.packets.data.DataPacket;
+import de.marcely.sbenlib.util.BufferedReadStream;
 import de.marcely.sbenlib.util.BufferedWriteStream;
 
 public class PacketData extends Packet {
 	
 	public DataPacket data;
 	public PacketsData packetsData;
+	public SecretKeySpec _key;
 	
 	@Override
 	public byte getType(){
@@ -15,27 +19,20 @@ public class PacketData extends Packet {
 	}
 	
 	@Override
-	protected byte[] _encode(){
-		this.writeStream.writeByte(data.getPacketID());
-		
-		data.setWriteStream(new BufferedWriteStream());
-		data.encode();
-		this.writeStream.write(data.getWriteBytes());
-		
-		return this.writeStream.toByteArray();
+	protected void _encode(BufferedWriteStream stream){
+		stream.writeByte(data.getPacketID());
+		data.encode(stream);
 	}
 	
 	@Override
-	protected void _decode(byte[] data){
-		final byte packetId = this.readStream.readByte();
-		final DataPacket packet = packetsData.getPacket(packetId);
+	protected void _decode(BufferedReadStream stream){
+		final byte packetId = stream.readByte();
 		
-		if(packet != null){
-			this.data = packetsData.getPacket(packetId);
-			this.data.setReadStream(this.readStream);
-			this.data.decode();
+		this.data = packetsData.getPacket(packetId);
 		
-		}else
-			this.data = null;
+		if(this.data != null){
+			this.data.set_key(_key);
+			this.data.decode(stream);
+		}
 	}
 }

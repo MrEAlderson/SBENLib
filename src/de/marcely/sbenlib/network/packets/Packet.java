@@ -1,8 +1,9 @@
 package de.marcely.sbenlib.network.packets;
 
+import java.io.IOException;
+
 import de.marcely.sbenlib.util.BufferedReadStream;
 import de.marcely.sbenlib.util.BufferedWriteStream;
-import lombok.Getter;
 
 public abstract class Packet {
 	
@@ -14,14 +15,17 @@ public abstract class Packet {
 	public static final byte TYPE_ACK = (byte) 0x5;
 	public static final byte TYPE_NACK = (byte) 0x6;
 	public static final byte TYPE_CLOSE = (byte) 0x7; // max is 0x7
-	
-	@Getter protected BufferedWriteStream writeStream;
-	@Getter protected BufferedReadStream readStream;
+	public static final byte[] SEPERATOR;
 	
 	public boolean _needAck = false;
 	
+	static {
+		SEPERATOR = new byte[1];
+		SEPERATOR[0] = (byte) 0x0;
+	}
+	
 	public byte[] encode(){
-		this.writeStream = new BufferedWriteStream();
+		final BufferedWriteStream stream = new BufferedWriteStream();
 		
 		// do some magic and create a header
 		byte header = 0x0;
@@ -29,19 +33,33 @@ public abstract class Packet {
 		header = (byte) (header | (getType() << 1)); //type
 		header = (byte) (header | (_needAck  ? 1 : 0)); //need ack
 		
-		this.writeStream.writeByte(header);
+		stream.writeByte(header);
 		
-		return _encode();
+		// final
+		 _encode(stream);
+		 
+		 try{
+			stream.close();
+		}catch(IOException e){
+			e.printStackTrace();
+		}
+		 
+		 return stream.toByteArray();
 	}
 	
 	public void decode(byte[] data){
-		this.readStream = new BufferedReadStream(data);
-		
-		final byte header = this.readStream.readByte();
+		final BufferedReadStream stream = new BufferedReadStream(data);
+		final byte header = stream.readByte();
 		
 		this._needAck = (byte) (header << 7) == -128;
 		
-		_decode(data);
+		_decode(stream);
+		
+		try{
+			stream.close();
+		}catch(IOException e){
+			e.printStackTrace();
+		}
 	}
 	
 	public static byte getTypeOfHeader(byte header){
@@ -51,7 +69,7 @@ public abstract class Packet {
 	
 	public abstract byte getType();
 	
-	protected abstract byte[] _encode();
+	protected abstract void _encode(BufferedWriteStream stream);
 	
-	protected abstract void _decode(byte[] data);
+	protected abstract void _decode(BufferedReadStream stream);
 }

@@ -35,4 +35,12 @@ public class Util {
 		
 		return bytes;
 	}
+	
+	public static byte[] copyOfRange(byte[] buffer, int offset, int length){
+		final byte[] newData = new byte[length];
+		
+		System.arraycopy(buffer, offset, newData, 0, length);
+		
+		return newData;
+	}
 }

@@ -1,5 +1,8 @@
 package de.marcely.sbenlib.network.packets.data;
 
+import de.marcely.sbenlib.util.BufferedReadStream;
+import de.marcely.sbenlib.util.BufferedWriteStream;
+
 public abstract class NormalPacket extends DataPacket {
 	
 	@Override
@@ -7,22 +10,17 @@ public abstract class NormalPacket extends DataPacket {
 		return DataPacket.TYPE_NORMAL;
 	}
 	
-	@Override
+	protected abstract void write(BufferedWriteStream stream);
+	
+	protected abstract void read(BufferedReadStream stream);
+	
 	public abstract byte getPacketID();
-
-	@Override
-	public abstract void encode();
-
-	@Override
-	public abstract void decode();
-
-	@Override
-	public byte[] getWriteBytes(){
-		return this.writeStream.toByteArray();
+	
+	public void encode(BufferedWriteStream stream){
+		write(stream);
 	}
-
-	@Override
-	public byte[] getReadBytes(byte[] bytes){
-		return bytes;
+	
+	public void decode(BufferedReadStream stream){
+		read(stream);
 	}
 }

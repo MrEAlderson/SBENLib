@@ -24,10 +24,7 @@ public class BufferedWriteStream extends ByteArrayOutputStream {
 	}
 	
 	public void writeByte(byte b){
-		final byte[] array = new byte[1];
-		array[0] = b;
-		
-		write(array);
+		write(new byte[]{ b });
 	}
 	
 	public void writeUnsignedByte(int b){

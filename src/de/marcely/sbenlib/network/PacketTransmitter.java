@@ -8,13 +8,15 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import javax.annotation.Nullable;
+import javax.crypto.spec.SecretKeySpec;
 
 import de.marcely.sbenlib.network.packets.Packet;
 import de.marcely.sbenlib.network.packets.PacketAck;
 import de.marcely.sbenlib.network.packets.PacketNack;
 import de.marcely.sbenlib.network.packets.PacketPing;
-import de.marcely.sbenlib.util.BufferedReadStream;
 import de.marcely.sbenlib.util.BufferedWriteStream;
+import de.marcely.sbenlib.util.Util;
+import lombok.Setter;
 
 public abstract class PacketTransmitter {
 	
@@ -26,6 +28,8 @@ public abstract class PacketTransmitter {
 	private Map<Byte, byte[]> notAckedSendPackets = new HashMap<>();
 	private Map<Byte, byte[]> queueSplitReceivePackets = new TreeMap<>();
 	private List<Byte> missingPackets = new ArrayList<>();
+	
+	@Setter private SecretKeySpec key;
 	
 	public PacketTransmitter(PacketsData packets){
 		this.packets = packets;
@@ -57,7 +61,7 @@ public abstract class PacketTransmitter {
 		for(int i=0; i<parts; i++){
 			final int remaining = totalBuffer.length-i*PACKET_PART_SIZE;
 			
-			stream.write(currentSendWindow | (i+1 == parts ? 1 : 0) << 7);
+			stream.writeByte((byte) (currentSendWindow | (i+1 == parts ? 1 : 0) << 7));
 			stream.write(totalBuffer, i*PACKET_PART_SIZE, remaining > PACKET_PART_SIZE ? PACKET_PART_SIZE : remaining);
 			
 			final byte[] buffer = stream.toByteArray();
@@ -67,7 +71,7 @@ public abstract class PacketTransmitter {
 			
 			send(buffer);
 			
-			if(i+1 != parts)
+			if(parts != 1)
 				stream.reset();
 		}
 		
@@ -99,17 +103,10 @@ public abstract class PacketTransmitter {
 	}
 	
 	public void handlePacket(byte[] buffer){
-		BufferedReadStream stream = new BufferedReadStream(buffer);
-		final byte header = stream.readByte();
+		final byte header = buffer[0];
 		final boolean isFinal = header >> 7 == -1;
 		final byte window = (byte) (header ^ (isFinal ? 0x80 : 0x00));
-		final byte[] data = stream.read(stream.available());
-		
-		try{
-			stream.close();
-		}catch(IOException e){
-			e.printStackTrace();
-		}
+		final byte[] data = Util.copyOfRange(buffer, 1, buffer.length-1);
 		
 		// do window check
 		if(window != currentReceiveWindow){
@@ -147,7 +144,7 @@ public abstract class PacketTransmitter {
 				try{
 					stream2.close();
 					
-					final Packet packet = PacketDecoder.decode(this.packets, b);
+					final Packet packet = PacketDecoder.decode(this.packets, this.key, b);
 					
 					if(packet != null){
 						receive(packet);
@@ -163,7 +160,7 @@ public abstract class PacketTransmitter {
 				
 			}else{
 				try{
-					final Packet packet = PacketDecoder.decode(this.packets, data);
+					final Packet packet = PacketDecoder.decode(this.packets, this.key, data);
 					
 					if(packet != null){
 						receive(packet);

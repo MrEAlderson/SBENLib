@@ -1,6 +1,8 @@
 package de.marcely.sbenlib.test;
 
 import de.marcely.sbenlib.network.packets.data.NormalPacket;
+import de.marcely.sbenlib.util.BufferedReadStream;
+import de.marcely.sbenlib.util.BufferedWriteStream;
 
 public class TestNormalPacket extends NormalPacket {
 	
@@ -12,13 +14,13 @@ public class TestNormalPacket extends NormalPacket {
 	}
 
 	@Override
-	public void encode(){
-		this.writeStream.writeString(testString);
+	public void write(BufferedWriteStream stream){
+		stream.writeString(testString);
 	}
 
 	@Override
-	public void decode(){
+	public void read(BufferedReadStream stream){
 		System.out.println("DECODE");
-		System.out.println(this.readStream.readString());
+		System.out.println(stream.readString());
 	}
 }

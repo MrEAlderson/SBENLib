@@ -29,7 +29,7 @@ public abstract class Protocol {
 	}
 	
 	public boolean sendPacket(Packet packet){
-		return sendPacket(packet.getWriteStream().toByteArray());
+		return sendPacket(packet.encode());
 	}
 	
 	

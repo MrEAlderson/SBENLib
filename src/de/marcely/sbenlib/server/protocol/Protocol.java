@@ -39,7 +39,7 @@ public abstract class Protocol {
 	}
 	
 	public boolean sendPacket(Session session, Packet packet){
-		return sendPacket(session, packet.getWriteStream().toByteArray());
+		return sendPacket(session, packet.encode());
 	}
 	
 	public boolean sendPacket(Session session, byte[] packet){

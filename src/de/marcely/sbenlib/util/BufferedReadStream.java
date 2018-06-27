@@ -96,7 +96,7 @@ public class BufferedReadStream extends ByteArrayInputStream {
 	 * 
 	 * @return Reads a signed float
 	 */
-	public float readSignedFloat(){
+	public float readFloat(){
 		return ByteBuffer.wrap(read(4)).getFloat();
 	}
 	
@@ -104,7 +104,7 @@ public class BufferedReadStream extends ByteArrayInputStream {
 	 * 
 	 * @return Reads a signed double
 	 */
-	public double readSignedDouble(){
+	public double readDouble(){
 		return ByteBuffer.wrap(read(8)).getDouble();
 	}
 	

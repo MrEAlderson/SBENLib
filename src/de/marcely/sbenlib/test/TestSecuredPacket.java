@@ -1,6 +1,8 @@
 package de.marcely.sbenlib.test;
 
 import de.marcely.sbenlib.network.packets.data.SecuredPacket;
+import de.marcely.sbenlib.util.BufferedReadStream;
+import de.marcely.sbenlib.util.BufferedWriteStream;
 
 public class TestSecuredPacket extends SecuredPacket {
 	
@@ -12,12 +14,13 @@ public class TestSecuredPacket extends SecuredPacket {
 	}
 
 	@Override
-	public void encode(){
-		this.writeStream.writeString(testString);
+	public void write(BufferedWriteStream stream){
+		stream.writeString(testString);
 	}
 
 	@Override
-	public void decode(){
-		System.out.println(this.readStream.readString());
+	public void read(BufferedReadStream stream){
+		System.out.println("DECODE");
+		System.out.println(stream.readString());
 	}
 }

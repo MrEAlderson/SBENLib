@@ -17,6 +17,11 @@ public class PacketsData {
 		this.packets.put(packet.getPacketID(), packet);
 	}
 	
+	public void addPackets(DataPacket... packets){
+		for(DataPacket packet:packets)
+			addPacket(packet);
+	}
+	
 	public void removePacket(byte id){
 		this.packets.remove(id);
 	}

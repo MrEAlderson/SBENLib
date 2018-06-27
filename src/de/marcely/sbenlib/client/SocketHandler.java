@@ -21,6 +21,7 @@ import de.marcely.sbenlib.network.packets.PacketNack;
 import de.marcely.sbenlib.network.packets.PacketPing;
 import de.marcely.sbenlib.network.packets.PacketPong;
 import de.marcely.sbenlib.network.packets.data.DataPacket;
+import de.marcely.sbenlib.network.packets.data.SecuredPacket;
 import de.marcely.sbenlib.util.TickTimer;
 import de.marcely.sbenlib.util.Util;
 import lombok.Getter;
@@ -72,6 +73,8 @@ public class SocketHandler {
 						e.printStackTrace();
 					}
 				}
+				
+				packetTransmitter.sendNacks();
 			}
 		};
 		this.packetHandlerTimer.start();
@@ -100,7 +103,7 @@ public class SocketHandler {
 				this.getServer().setConnectionState(ConnectionState.Connecting);
 				
 				server.key = new SecretKeySpec(Util.generateRandomSecurityID(), "AES");
-				
+				packetTransmitter.setKey(server.key);
 				packetHandlerTimer.start();
 				
 				// send login packet
@@ -143,6 +146,9 @@ public class SocketHandler {
 	public boolean sendPacket(DataPacket packet, boolean needACK){
 		if(needACK && getProtocol().getType() == ProtocolType.TCP)
 			needACK = false;
+		
+		if(packet instanceof SecuredPacket)
+			((SecuredPacket) packet).set_key(this.server.key);
 		
 		final PacketData packet_data = new PacketData();
 		packet_data.data = packet;

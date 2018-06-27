@@ -1,5 +1,8 @@
 package de.marcely.sbenlib.network.packets;
 
+import de.marcely.sbenlib.util.BufferedReadStream;
+import de.marcely.sbenlib.util.BufferedWriteStream;
+
 public class PacketPong extends Packet {
 	
 	public long time;
@@ -10,14 +13,12 @@ public class PacketPong extends Packet {
 	}
 
 	@Override
-	protected byte[] _encode(){
-		this.writeStream.writeSignedLong(time);
-		
-		return this.writeStream.toByteArray();
+	protected void _encode(BufferedWriteStream stream){
+		stream.writeSignedLong(time);
 	}
 
 	@Override
-	protected void _decode(byte[] data){
-		time = this.readStream.readSignedLong();
+	protected void _decode(BufferedReadStream stream){
+		time = stream.readSignedLong();
 	}
 }

@@ -1,5 +1,8 @@
 package de.marcely.sbenlib.network.packets;
 
+import de.marcely.sbenlib.util.BufferedReadStream;
+import de.marcely.sbenlib.util.BufferedWriteStream;
+
 public class PacketNack extends Packet {
 	
 	public Byte[] windows;
@@ -10,18 +13,16 @@ public class PacketNack extends Packet {
 	}
 
 	@Override
-	protected byte[] _encode(){
+	protected void _encode(BufferedWriteStream stream){
 		for(byte window:windows)
-			this.writeStream.write(window);
-		
-		return this.writeStream.toByteArray();
+			stream.write(window);
 	}
 
 	@Override
-	protected void _decode(byte[] data){
-		this.windows = new Byte[this.readStream.available()];
+	protected void _decode(BufferedReadStream stream){
+		this.windows = new Byte[stream.available()];
 		
 		for(int i=0; i<this.windows.length; i++)
-			this.windows[i] = this.readStream.readByte();
+			this.windows[i] = stream.readByte();
 	}
 }
