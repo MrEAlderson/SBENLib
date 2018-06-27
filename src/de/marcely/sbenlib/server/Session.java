@@ -146,6 +146,8 @@ public class Session {
 	}
 	
 	private void handle(PacketLogin packet){
+		if(this.connectionState != ConnectionState.Connecting) return;
+		
 		final PacketLoginReply packet_reply = new PacketLoginReply();
 		
 		if(packet.version_protocol == Network.PROTOCOL_VERSION){
@@ -166,6 +168,8 @@ public class Session {
 	}
 	
 	private void handle(PacketPing packet){
+		if(this.connectionState != ConnectionState.Connected) return;
+		
 		if(packet.time == 0) return;
 		
 		final PacketPong packet_pong = new PacketPong();
@@ -181,6 +185,8 @@ public class Session {
 	}
 	
 	private void handle(PacketData packet){
+		if(this.connectionState != ConnectionState.Connected) return;
+		
 		final DataPacket dataPacket = packet.data;
 		
 		for(SessionEventListener listener:getListeners())

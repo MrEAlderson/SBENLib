@@ -42,6 +42,9 @@ public class UDPProtocol extends Protocol {
 							try{
 								socket.receive(packet);
 								
+								if(!packet.getAddress().equals(connectionInfo.IP) ||
+								    packet.getPort() != connectionInfo.PORT) return;
+								
 								listener.onPacketReceive(Arrays.copyOfRange(packet.getData(), packet.getOffset(), packet.getLength()));
 							}catch(IOException e){
 								final String reason = e.getMessage();

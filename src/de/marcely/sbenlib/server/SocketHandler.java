@@ -9,6 +9,7 @@ import java.util.Queue;
 
 import de.marcely.sbenlib.exception.PacketDecodeException;
 import de.marcely.sbenlib.network.ConnectionState;
+import de.marcely.sbenlib.network.packets.PacketClose;
 import de.marcely.sbenlib.server.protocol.Protocol;
 import de.marcely.sbenlib.util.TickTimer;
 import lombok.Getter;
@@ -102,6 +103,13 @@ public class SocketHandler {
 	public boolean closeSession(Session session, String reason){
 		if(!session.isConnected())
 			return false;
+		
+		// send packet
+		final PacketClose packet = new PacketClose();
+		
+		packet.reason = reason;
+		
+		session.getTransmitter().sendPacket(packet, false);
 		
 		// remove from cache
 		this.sessions.remove(session.getIdentifier());

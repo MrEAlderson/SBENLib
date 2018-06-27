@@ -10,11 +10,11 @@ public abstract class NormalPacket extends DataPacket {
 		return DataPacket.TYPE_NORMAL;
 	}
 	
+	public abstract byte getPacketID();
+	
 	protected abstract void write(BufferedWriteStream stream);
 	
 	protected abstract void read(BufferedReadStream stream);
-	
-	public abstract byte getPacketID();
 	
 	public void encode(BufferedWriteStream stream){
 		write(stream);

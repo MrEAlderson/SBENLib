@@ -13,11 +13,11 @@ public abstract class SecuredPacket extends NormalPacket {
 		return DataPacket.TYPE_SECURED;
 	}
 	
+	public abstract byte getPacketID();
+	
 	protected abstract void write(BufferedWriteStream stream);
 	
 	protected abstract void read(BufferedReadStream stream);
-	
-	public abstract byte getPacketID();
 	
 	public void encode(BufferedWriteStream stream){
 		if(_key == null){

@@ -135,6 +135,14 @@ public class SocketHandler {
 		packetHandlerTimer.stop();
 		
 		if(isRunning()){
+			// send packet
+			final PacketClose packet = new PacketClose();
+			
+			packet.reason = reason;
+			
+			packetTransmitter.sendPacket(packet, false);
+			
+			// do final stuff
 			this.getServer().setConnectionState(ConnectionState.Disconnected);
 			this.getServer().onDisconnect(reason);
 			
@@ -188,6 +196,8 @@ public class SocketHandler {
 	}
 	
 	private void handle(PacketLoginReply packet){
+		if(server.getConnectionState() != ConnectionState.Connecting) return;
+		
 		switch(packet.reply){
 		case PacketLoginReply.REPLY_SUCCESS:
 			getServer().setConnectionState(ConnectionState.Connected);
@@ -230,10 +240,14 @@ public class SocketHandler {
 	}
 	
 	private void handle(PacketClose packet){
+		if(server.getConnectionState() != ConnectionState.Connected) return;
+		
 		close(packet.reason);
 	}
 	
 	private void handle(PacketData packet){
+		if(server.getConnectionState() != ConnectionState.Connected) return;
+		
 		final DataPacket dataPacket = packet.data;
 		
 		getServer().onPacketReceive(dataPacket);
