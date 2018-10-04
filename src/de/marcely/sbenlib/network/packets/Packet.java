@@ -15,14 +15,6 @@ public abstract class Packet {
 	public static final byte TYPE_ACK = (byte) 0x5;
 	public static final byte TYPE_NACK = (byte) 0x6;
 	public static final byte TYPE_CLOSE = (byte) 0x7; // max is 0x7
-	public static final byte[] SEPERATOR;
-	
-	public boolean _needAck = false;
-	
-	static {
-		SEPERATOR = new byte[1];
-		SEPERATOR[0] = (byte) 0x0;
-	}
 	
 	public byte[] encode(){
 		final BufferedWriteStream stream = new BufferedWriteStream();
@@ -31,7 +23,7 @@ public abstract class Packet {
 		byte header = 0x0;
 		
 		header = (byte) (header | (getType() << 1)); //type
-		header = (byte) (header | (_needAck  ? 1 : 0)); //need ack
+		// header = (byte) (header | (_needAck  ? 1 : 0)); //need ack
 		
 		stream.writeByte(header);
 		
@@ -49,9 +41,9 @@ public abstract class Packet {
 	
 	public void decode(byte[] data){
 		final BufferedReadStream stream = new BufferedReadStream(data);
-		final byte header = stream.readByte();
+		/*final byte header = */stream.readByte();
 		
-		this._needAck = (byte) (header << 7) == -128;
+		// this._needAck = (byte) (header << 7) == -128;
 		
 		_decode(stream);
 		

@@ -51,7 +51,7 @@ public class Session {
 		this.thread = thread;
 		this.obj = obj;
 		
-		this.transmitter = new PacketTransmitter(server.getPacketsData()){
+		this.transmitter = new PacketTransmitter(server.getPacketsData(), server.getConnectionInfo().protocol.getMaxPacketSize(), server.getConnectionInfo().compression.getInstance()){
 			protected void send(byte[] data){
 				server.getSocketHandler().getProtocol().sendPacket(Session.this, data);
 			}
@@ -76,7 +76,7 @@ public class Session {
 	
 	public void sendPacket(DataPacket packet, boolean needACK){
 		if(needACK && server.getSocketHandler().getProtocol().getType() == ProtocolType.TCP)
-			needACK = true;
+			needACK = false;
 		
 		if(packet instanceof SecuredPacket)
 			((SecuredPacket) packet).set_key(this.key);
@@ -85,7 +85,11 @@ public class Session {
 		packet_data.data = packet;
 		packet_data.packetsData = getServer().getPacketsData();
 		
-		this.transmitter.sendPacket(packet_data, needACK);
+		try{
+			this.transmitter.sendPacket(packet_data, needACK);
+		}catch(Exception e){
+			e.printStackTrace();
+		}
 	}
 	
 	public void setConnectionState(ConnectionState state){
@@ -163,8 +167,11 @@ public class Session {
 		else
 			packet_reply.reply = PacketLoginReply.REPLY_FAILED_PROTOCOL_OUTDATED_SERVER;
 		
-		packet_reply.encode();
-		transmitter.sendPacket(packet_reply, true);
+		try{
+			transmitter.sendPacket(packet_reply, true);
+		}catch(Exception e){
+			e.printStackTrace();
+		}
 	}
 	
 	private void handle(PacketPing packet){
@@ -176,8 +183,11 @@ public class Session {
 		
 		packet_pong.time = packet.time;
 		
-		packet_pong.encode();
-		transmitter.sendPacket(packet_pong, false);
+		try{
+			transmitter.sendPacket(packet_pong, false);
+		}catch(Exception e){
+			e.printStackTrace();
+		}
 		
 		// get ping
 		setPing((packet.time - pingLastUpdate)-Network.PING_UPDATE);
@@ -195,7 +205,7 @@ public class Session {
 	
 	private void handle(PacketAck packet){
 		for(byte window:packet.windows)
-			this.transmitter.receiveNack(window);
+			this.transmitter.receiveAck(window);
 	}
 	
 	private void handle(PacketNack packet){

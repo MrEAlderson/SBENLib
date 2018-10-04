@@ -29,7 +29,7 @@ public class TCPProtocol extends Protocol {
 		if(!running){
 			
 			try{
-				socket = new Socket(connectionInfo.IP, connectionInfo.PORT);
+				socket = new Socket(connectionInfo.ip, connectionInfo.port);
 				
 				this.thread = new SThread(ThreadType.Protocol_TCP_Client){
 					protected void _run(){

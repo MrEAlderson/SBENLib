@@ -1,18 +1,15 @@
 package de.marcely.sbenlib.compression;
 
+import lombok.Getter;
+
 public enum CompressionType {
 	
-	ZLib,
-	GLib;
+	None(null),
+	ZLib(new ZLibCompression());
 	
-	public Compresser getInstance(){
-		switch(this){
-		case ZLib:
-			return ZLib.getInstance();
-		case GLib:
-			return GLib.getInstance();
-		default:
-			return null;
-		}
+	@Getter private final Compressor instance;
+	
+	private CompressionType(Compressor instance){
+		this.instance = instance;
 	}
 }

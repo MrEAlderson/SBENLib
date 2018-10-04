@@ -41,7 +41,7 @@ public class SocketHandler {
 	public SocketHandler(final SBENServerConnection server){
 		this.server = server;
 		
-		this.protocol = server.getConnectionInfo().PROTOCOL.getClientInstance(server.getConnectionInfo(), this, new ServerEventListener(){
+		this.protocol = server.getConnectionInfo().protocol.getClientInstance(server.getConnectionInfo(), this, new ServerEventListener(){
 			public void onPacketReceive(byte[] data){
 				packetsQueue.add(data);
 			}
@@ -80,7 +80,7 @@ public class SocketHandler {
 		this.packetHandlerTimer.start();
 		
 		// create transmitter to add priority for packets
-		this.packetTransmitter = new PacketTransmitter(server.getPacketsData()){
+		this.packetTransmitter = new PacketTransmitter(server.getPacketsData(), server.getConnectionInfo().protocol.getMaxPacketSize(), server.getConnectionInfo().compression.getInstance()){
 			protected void send(byte[] data){
 				protocol.sendPacket(data);
 			}
@@ -110,9 +110,12 @@ public class SocketHandler {
 				final PacketLogin packet = new PacketLogin();
 				packet.security_id = server.key.getEncoded();
 				packet.version_protocol = Network.PROTOCOL_VERSION;
-				packet.encode();
 				
-				packetTransmitter.sendPacket(packet, false);
+				try{
+					packetTransmitter.sendPacket(packet, false);
+				}catch(Exception e){
+					e.printStackTrace();
+				}
 				
 				return true;
 			}else{
@@ -140,7 +143,11 @@ public class SocketHandler {
 			
 			packet.reason = reason;
 			
-			packetTransmitter.sendPacket(packet, false);
+			try{
+				packetTransmitter.sendPacket(packet, false);
+			}catch(Exception e){
+				e.printStackTrace();
+			}
 			
 			// do final stuff
 			this.getServer().setConnectionState(ConnectionState.Disconnected);
@@ -151,7 +158,7 @@ public class SocketHandler {
 			return false;
 	}
 	
-	public boolean sendPacket(DataPacket packet, boolean needACK){
+	public void sendPacket(DataPacket packet, boolean needACK){
 		if(needACK && getProtocol().getType() == ProtocolType.TCP)
 			needACK = false;
 		
@@ -162,7 +169,11 @@ public class SocketHandler {
 		packet_data.data = packet;
 		packet_data.packetsData = getServer().getPacketsData();
 		
-		return packetTransmitter.sendPacket(packet_data, needACK);
+		try{
+			packetTransmitter.sendPacket(packet_data, needACK);
+		}catch(Exception e){
+			e.printStackTrace();
+		}
 	}
 	
 	
@@ -209,8 +220,11 @@ public class SocketHandler {
 					
 					packet.time = System.currentTimeMillis();
 					
-					packet.encode();
-					packetTransmitter.sendPacket(packet, false);
+					try{
+						packetTransmitter.sendPacket(packet, false);
+					}catch(Exception e){
+						e.printStackTrace();
+					}
 				}
 			};
 			timer_ping.start();
@@ -240,6 +254,8 @@ public class SocketHandler {
 	}
 	
 	private void handle(PacketClose packet){
+		System.out.println(server.getConnectionState());
+		
 		if(server.getConnectionState() != ConnectionState.Connected) return;
 		
 		close(packet.reason);
@@ -255,7 +271,7 @@ public class SocketHandler {
 	
 	private void handle(PacketAck packet){
 		for(byte window:packet.windows)
-			this.packetTransmitter.receiveNack(window);
+			this.packetTransmitter.receiveAck(window);
 	}
 	
 	private void handle(PacketNack packet){

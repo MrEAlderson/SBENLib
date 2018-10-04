@@ -17,6 +17,8 @@ import de.marcely.sbenlib.network.packets.data.SecuredPacket;
 public class PacketDecoder {
 	
 	public static @Nullable Packet decode(PacketsData packetsData, SecretKeySpec key, byte[] data) throws Exception {
+		if(data.length == 0) return null;
+		
 		try{
 			final byte id = Packet.getTypeOfHeader(data[0]);
 			

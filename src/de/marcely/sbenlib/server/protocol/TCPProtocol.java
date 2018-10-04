@@ -34,7 +34,7 @@ public class TCPProtocol extends Protocol {
 		if(!running){
 			try{
 				
-				this.socket = new ServerSocket(connectionInfo.PORT, maxClients, connectionInfo.IP);
+				this.socket = new ServerSocket(connectionInfo.port, maxClients, connectionInfo.ip);
 				
 				// server client
 				this.thread = new SThread(ThreadType.Protocol_TCP_Server){

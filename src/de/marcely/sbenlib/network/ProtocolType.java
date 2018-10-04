@@ -5,15 +5,16 @@ import lombok.Getter;
 
 public enum ProtocolType {
 	
-	UDP(true),
-	TCP(false);
+	UDP(true, 65507),
+	TCP(false, 1500);
 	
 	@Getter private final boolean requiresAckNack;
+	@Getter private final int maxPacketSize;
 	
-	private ProtocolType(boolean requiresAckNack){
+	private ProtocolType(boolean requiresAckNack, int maxPacketSize){
 		this.requiresAckNack = requiresAckNack;
+		this.maxPacketSize = maxPacketSize;
 	}
-	
 	
 	public de.marcely.sbenlib.client.protocol.Protocol getClientInstance(ConnectionInfo conn, de.marcely.sbenlib.client.SocketHandler socketHandler, de.marcely.sbenlib.client.ServerEventListener listener){
 		switch(this){

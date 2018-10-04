@@ -34,7 +34,7 @@ public class UDPProtocol extends Protocol {
 		if(!running){
 			try{
 				
-				socket = new DatagramSocket(new InetSocketAddress(connectionInfo.IP, connectionInfo.PORT));
+				socket = new DatagramSocket(new InetSocketAddress(connectionInfo.ip, connectionInfo.port));
 				
 				this.thread = new SThread(ThreadType.Protocol_TCP_Server){
 					protected void _run(){

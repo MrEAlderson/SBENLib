@@ -7,10 +7,10 @@ import de.marcely.sbenlib.util.Util;
 
 public class ConnectionInfo {
 	
-	public final InetAddress IP;
-	public final int PORT;
-	public final ProtocolType PROTOCOL;
-	public final CompressionType COMPRESSION;
+	public final InetAddress ip;
+	public final int port;
+	public final ProtocolType protocol;
+	public final CompressionType compression;
 	
 	public ConnectionInfo(String ip, int port){
 		this(Util.getInetAddress(ip), port);
@@ -25,9 +25,9 @@ public class ConnectionInfo {
 	}
 	
 	public ConnectionInfo(InetAddress ip, int port, ProtocolType protocol, CompressionType compression){
-		this.IP = ip;
-		this.PORT = port;
-		this.PROTOCOL = protocol;
-		this.COMPRESSION = compression;
+		this.ip = ip;
+		this.port = port;
+		this.protocol = protocol;
+		this.compression = compression;
 	}
 }

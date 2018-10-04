@@ -42,8 +42,8 @@ public class UDPProtocol extends Protocol {
 							try{
 								socket.receive(packet);
 								
-								if(!packet.getAddress().equals(connectionInfo.IP) ||
-								    packet.getPort() != connectionInfo.PORT) return;
+								if(!packet.getAddress().equals(connectionInfo.ip) ||
+								   packet.getPort() != connectionInfo.port) return;
 								
 								listener.onPacketReceive(Arrays.copyOfRange(packet.getData(), packet.getOffset(), packet.getLength()));
 							}catch(IOException e){
@@ -90,7 +90,7 @@ public class UDPProtocol extends Protocol {
 		if(running){
 			
 			try{
-				socket.send(new DatagramPacket(packet, packet.length, connectionInfo.IP, connectionInfo.PORT));
+				socket.send(new DatagramPacket(packet, packet.length, connectionInfo.ip, connectionInfo.port));
 			
 			}catch(IOException e){
 				e.printStackTrace();

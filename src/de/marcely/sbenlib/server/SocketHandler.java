@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Queue;
 
-import de.marcely.sbenlib.exception.PacketDecodeException;
 import de.marcely.sbenlib.network.ConnectionState;
 import de.marcely.sbenlib.network.packets.PacketClose;
 import de.marcely.sbenlib.server.protocol.Protocol;
@@ -27,7 +26,7 @@ public class SocketHandler {
 	public SocketHandler(final SBENServer server, int maxClients){
 		this.server = server;
 		
-		this.protocol = server.getConnectionInfo().PROTOCOL.getServerInstance(server.getConnectionInfo(), server, new ServerEventListener(){
+		this.protocol = server.getConnectionInfo().protocol.getServerInstance(server.getConnectionInfo(), server, new ServerEventListener(){
 			public void onClientRequest(Session session){
 				session.setConnectionState(ConnectionState.Connecting);
 				
@@ -63,6 +62,8 @@ public class SocketHandler {
 				for(Session s:new ArrayList<Session>(sessions.values())){
 					if(System.currentTimeMillis() - 1000*10 > s.pingLastUpdate)
 						s.close("CLIENT_TIMEOUT");
+					
+					s.getTransmitter().sendNacks();
 				}
 				
 				RawPacket packet = null;
@@ -71,7 +72,7 @@ public class SocketHandler {
 					try{
 						packet.session.getTransmitter().handlePacket(packet.packet);
 					}catch(Exception e){
-						new PacketDecodeException().printStackTrace();
+						e.printStackTrace();
 					}
 				}
 			}
@@ -109,7 +110,11 @@ public class SocketHandler {
 		
 		packet.reason = reason;
 		
-		session.getTransmitter().sendPacket(packet, false);
+		try{
+			session.getTransmitter().sendPacket(packet, false);
+		}catch(Exception e){
+			e.printStackTrace();
+		}
 		
 		// remove from cache
 		this.sessions.remove(session.getIdentifier());
